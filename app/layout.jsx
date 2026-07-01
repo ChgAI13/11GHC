@@ -1,16 +1,19 @@
 import "./globals.css";
 import { AppShell } from "@/components/AppShell";
+import { LanguageProvider } from "@/components/LanguageProvider";
 
 export const metadata = {
-  title: "澳洲留学生 AI 助手",
-  description: "手机端友好的澳洲留学生 AI 助手 MVP"
+  title: "UQ Academic Planner",
+  description: "Academic planning dashboard for University of Queensland students"
 };
 
 export default function RootLayout({ children }) {
   return (
     <html lang="zh-CN">
       <body>
-        <AppShell>{children}</AppShell>
+        <LanguageProvider>
+          <AppShell>{children}</AppShell>
+        </LanguageProvider>
       </body>
     </html>
   );

@@ -3,8 +3,8 @@
 @tailwind utilities;
 
 :root {
-  color: #17211f;
-  background: #fbfaf6;
+  color: #1d1d1f;
+  background: #ffffff;
 }
 
 * {
@@ -18,10 +18,8 @@ html {
 body {
   min-height: 100vh;
   margin: 0;
-  background:
-    radial-gradient(circle at top left, rgba(223, 244, 235, 0.9), transparent 32rem),
-    linear-gradient(135deg, #fbfaf6 0%, #eef8f2 46%, #f9efe6 100%);
-  color: #17211f;
+  background: #ffffff;
+  color: #1d1d1f;
 }
 
 button,
@@ -38,23 +36,7 @@ textarea {
 }
 
 @layer components {
-  .field-label {
-    @apply text-sm font-semibold text-ink/75;
-  }
-
-  .field-input {
-    @apply mt-2 rounded-lg border border-ink/15 bg-white px-3 py-3 text-base text-ink outline-none transition focus:border-eucalyptus focus:ring-4 focus:ring-eucalyptus/15;
-  }
-
   .primary-button {
     @apply inline-flex min-h-11 items-center justify-center gap-2 rounded-lg bg-eucalyptus px-4 py-2.5 text-sm font-bold text-white shadow-soft transition hover:bg-ink focus:outline-none focus:ring-4 focus:ring-eucalyptus/25;
-  }
-
-  .secondary-button {
-    @apply inline-flex min-h-11 items-center justify-center gap-2 rounded-lg border border-ink/15 bg-white px-4 py-2.5 text-sm font-bold text-ink transition hover:border-eucalyptus hover:text-eucalyptus focus:outline-none focus:ring-4 focus:ring-eucalyptus/15;
-  }
-
-  .surface {
-    @apply rounded-lg border border-ink/10 bg-white/85 shadow-soft backdrop-blur;
   }
 }
