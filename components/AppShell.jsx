@@ -26,10 +26,11 @@ const copy = {
   zh: {
     brand: "UQ Academic Planner",
     subtitle: "经济学学士 MVP",
-    settings: "设置",
+    settings: "Profile",
     comingSoon: "暂未开放",
     resetAllData: "Reset All Data",
-    resetConfirm: "确定要清空所有本地数据吗？此操作会重置 GPA、Course Planner 和语言设置。",
+    resetConfirm:
+      "确定要清空所有本地数据吗？此操作会重置 Academic Profile、GPA、Course Planner 和语言设置。",
     nav: {
       dashboard: "仪表盘",
       gpaPlanner: "GPA 规划",
@@ -41,11 +42,11 @@ const copy = {
   en: {
     brand: "UQ Academic Planner",
     subtitle: "Bachelor of Economics MVP",
-    settings: "Settings",
+    settings: "Profile",
     comingSoon: "Coming soon",
     resetAllData: "Reset All Data",
     resetConfirm:
-      "Clear all local data? This will reset GPA Planner, Course Planner, and language settings.",
+      "Clear all local data? This will reset Academic Profile, GPA Planner, Course Planner, and language settings.",
     nav: {
       dashboard: "Dashboard",
       gpaPlanner: "GPA Planner",
@@ -220,15 +221,14 @@ export function AppShell({ children }) {
                 </span>
               </Link>
               <div className="flex items-center gap-2">
-                <button
-                  type="button"
-                  className="grid h-10 w-10 cursor-not-allowed place-items-center rounded-full border border-[#e5e5ea] bg-white text-[#a1a1a6]"
-                  disabled
-                  title={t.comingSoon}
+                <Link
+                  href="/profile"
+                  className="grid h-10 w-10 place-items-center rounded-full border border-[#e5e5ea] bg-white text-[#6e6e73] transition hover:bg-[#f5f5f7] hover:text-[#1d1d1f]"
                   aria-label={t.settings}
+                  title={t.settings}
                 >
                   <Settings className="h-4 w-4" aria-hidden="true" />
-                </button>
+                </Link>
                 <ResetAllDataButton
                   label={t.resetAllData}
                   confirmMessage={t.resetConfirm}
@@ -256,15 +256,14 @@ export function AppShell({ children }) {
                 <RotateCcw className="h-4 w-4" aria-hidden="true" />
                 {t.resetAllData}
               </button>
-              <button
-                type="button"
-                className="inline-flex min-h-10 cursor-not-allowed items-center gap-2 rounded-full border border-[#e5e5ea] bg-white px-4 text-sm font-semibold text-[#a1a1a6]"
-                disabled
-                title={t.comingSoon}
+              <Link
+                href="/profile"
+                className="inline-flex min-h-10 items-center gap-2 rounded-full border border-[#e5e5ea] bg-white px-4 text-sm font-semibold text-[#6e6e73] transition hover:bg-[#f5f5f7] hover:text-[#1d1d1f]"
+                title={t.settings}
               >
                 <Settings className="h-4 w-4" aria-hidden="true" />
                 {t.settings}
-              </button>
+              </Link>
             </div>
           </header>
 

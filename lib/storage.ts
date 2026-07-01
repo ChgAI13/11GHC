@@ -1,5 +1,6 @@
 export type StorageSection =
   | "dashboard"
+  | "academicProfile"
   | "gpaPlanner"
   | "coursePlanner"
   | "translator"

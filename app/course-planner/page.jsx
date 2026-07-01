@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
+import Link from "next/link";
 import {
   AlertTriangle,
   BookOpen,
@@ -8,70 +9,70 @@ import {
   ClipboardList,
   GraduationCap,
   Sparkles,
-  Target
+  Target,
+  UserRound
 } from "lucide-react";
 import { uqBachelorOfEconomicsCourses } from "@/data/courses";
 import {
   recommendCourses,
   uqBachelorOfEconomicsProgram
 } from "@/lib/recommendationEngine";
+import {
+  DEFAULT_ACADEMIC_PROFILE,
+  loadProfile
+} from "@/lib/profile";
 import { load, save } from "@/lib/storage";
 
 const panelClass = "rounded-lg border border-[#e5e5ea] bg-white shadow-[0_1px_2px_rgba(0,0,0,0.04)]";
 const softPanelClass = "rounded-lg border border-[#e5e5ea] bg-[#fbfbfd]";
-
-const DEFAULT_COURSE_PLANNER_FORM = {
-  currentGpa: "5.80",
-  targetGpa: "6.20",
-  completedCourses: ["ECON1010", "ECON1050"],
-  preferredWorkload: "Medium",
+const DEFAULT_COURSE_PLANNER_STATE = {
   hasGeneratedPlan: false
 };
-
-const workloadOptions = ["Light", "Medium", "Heavy"];
 
 function formatCourseMeta(course) {
   return `Level ${course.level} · ${course.units} units · ${course.category}`;
 }
 
+function getProfileIssues(profile) {
+  const currentGpaValue = Number(profile.currentGpa);
+  const targetGpaValue = Number(profile.targetGpa);
+
+  if (!Number.isFinite(currentGpaValue) || profile.currentGpa.trim() === "") {
+    return "请先到 Academic Profile 填写 Current GPA。";
+  }
+
+  if (!Number.isFinite(targetGpaValue) || profile.targetGpa.trim() === "") {
+    return "请先到 Academic Profile 填写 Target GPA。";
+  }
+
+  if (profile.completedCourses.length === 0) {
+    return "请先到 Academic Profile 选择至少一门已完成课程。";
+  }
+
+  return "";
+}
+
 export default function CoursePlannerPage() {
-  const [currentGpa, setCurrentGpa] = useState(DEFAULT_COURSE_PLANNER_FORM.currentGpa);
-  const [targetGpa, setTargetGpa] = useState(DEFAULT_COURSE_PLANNER_FORM.targetGpa);
-  const [completedCourses, setCompletedCourses] = useState(
-    DEFAULT_COURSE_PLANNER_FORM.completedCourses
-  );
-  const [preferredWorkload, setPreferredWorkload] = useState(
-    DEFAULT_COURSE_PLANNER_FORM.preferredWorkload
-  );
+  const [profile, setProfile] = useState(DEFAULT_ACADEMIC_PROFILE);
   const [hasGeneratedPlan, setHasGeneratedPlan] = useState(
-    DEFAULT_COURSE_PLANNER_FORM.hasGeneratedPlan
+    DEFAULT_COURSE_PLANNER_STATE.hasGeneratedPlan
   );
   const [hasLoadedSavedValues, setHasLoadedSavedValues] = useState(false);
   const [result, setResult] = useState(null);
   const [formError, setFormError] = useState("");
 
-  const completedCourseSet = useMemo(() => new Set(completedCourses), [completedCourses]);
+  const completedCourseDetails = useMemo(() => {
+    const completedCourseSet = new Set(profile.completedCourses);
+
+    return uqBachelorOfEconomicsCourses.filter((course) =>
+      completedCourseSet.has(course.code)
+    );
+  }, [profile.completedCourses]);
 
   useEffect(() => {
-    const savedValues = load("coursePlanner", DEFAULT_COURSE_PLANNER_FORM);
+    setProfile(loadProfile());
 
-    if (typeof savedValues.currentGpa === "string") {
-      setCurrentGpa(savedValues.currentGpa);
-    }
-
-    if (typeof savedValues.targetGpa === "string") {
-      setTargetGpa(savedValues.targetGpa);
-    }
-
-    if (Array.isArray(savedValues.completedCourses)) {
-      setCompletedCourses(
-        savedValues.completedCourses.filter((courseCode) => typeof courseCode === "string")
-      );
-    }
-
-    if (typeof savedValues.preferredWorkload === "string") {
-      setPreferredWorkload(savedValues.preferredWorkload);
-    }
+    const savedValues = load("coursePlanner", DEFAULT_COURSE_PLANNER_STATE);
 
     if (typeof savedValues.hasGeneratedPlan === "boolean") {
       setHasGeneratedPlan(savedValues.hasGeneratedPlan);
@@ -86,73 +87,42 @@ export default function CoursePlannerPage() {
     }
 
     save("coursePlanner", {
-      currentGpa,
-      targetGpa,
-      completedCourses,
-      preferredWorkload,
       hasGeneratedPlan
     });
-  }, [
-    currentGpa,
-    targetGpa,
-    completedCourses,
-    preferredWorkload,
-    hasGeneratedPlan,
-    hasLoadedSavedValues
-  ]);
+  }, [hasGeneratedPlan, hasLoadedSavedValues]);
 
   useEffect(() => {
     if (!hasLoadedSavedValues || !hasGeneratedPlan) {
       return;
     }
 
+    const profileIssue = getProfileIssues(profile);
+
+    if (profileIssue) {
+      setFormError(profileIssue);
+      setResult(null);
+      return;
+    }
+
     setResult(
       recommendCourses({
         program: uqBachelorOfEconomicsProgram,
-        currentGpa: Number(currentGpa) || 0,
-        completedCourses,
-        targetGpa: Number(targetGpa) || 0,
-        preferredWorkload
+        currentGpa: Number(profile.currentGpa),
+        completedCourses: profile.completedCourses,
+        targetGpa: Number(profile.targetGpa),
+        preferredWorkload: profile.preferredWorkload
       })
     );
-  }, [
-    currentGpa,
-    targetGpa,
-    completedCourses,
-    preferredWorkload,
-    hasGeneratedPlan,
-    hasLoadedSavedValues
-  ]);
-
-  function toggleCompletedCourse(courseCode) {
-    setCompletedCourses((currentCourses) =>
-      currentCourses.includes(courseCode)
-        ? currentCourses.filter((code) => code !== courseCode)
-        : [...currentCourses, courseCode]
-    );
-  }
+    setFormError("");
+  }, [profile, hasGeneratedPlan, hasLoadedSavedValues]);
 
   function generatePlan(event) {
     event.preventDefault();
-    const currentGpaValue = Number(currentGpa);
-    const targetGpaValue = Number(targetGpa);
 
-    if (!Number.isFinite(currentGpaValue) || currentGpa.trim() === "") {
-      setFormError("Please enter your current GPA before generating a semester plan.");
-      setResult(null);
-      setHasGeneratedPlan(false);
-      return;
-    }
+    const profileIssue = getProfileIssues(profile);
 
-    if (!Number.isFinite(targetGpaValue) || targetGpa.trim() === "") {
-      setFormError("Please enter your target GPA before generating a semester plan.");
-      setResult(null);
-      setHasGeneratedPlan(false);
-      return;
-    }
-
-    if (completedCourses.length === 0) {
-      setFormError("Please select at least one completed course.");
+    if (profileIssue) {
+      setFormError(profileIssue);
       setResult(null);
       setHasGeneratedPlan(false);
       return;
@@ -160,10 +130,10 @@ export default function CoursePlannerPage() {
 
     const nextResult = recommendCourses({
       program: uqBachelorOfEconomicsProgram,
-      currentGpa: currentGpaValue,
-      completedCourses,
-      targetGpa: targetGpaValue,
-      preferredWorkload
+      currentGpa: Number(profile.currentGpa),
+      completedCourses: profile.completedCourses,
+      targetGpa: Number(profile.targetGpa),
+      preferredWorkload: profile.preferredWorkload
     });
 
     setResult(nextResult);
@@ -184,7 +154,7 @@ export default function CoursePlannerPage() {
               Course Planner
             </h1>
             <p className="mt-4 max-w-2xl text-base leading-7 text-[#6e6e73] sm:text-lg">
-              使用本地 Mock Data 和规则引擎，根据当前 GPA、已完成课程和目标 GPA 推荐下一批课程。
+              课程推荐现在统一读取 Academic Profile，再交给本地规则引擎生成下学期计划。
             </p>
           </div>
 
@@ -204,143 +174,112 @@ export default function CoursePlannerPage() {
         <form className={`${panelClass} p-5 sm:p-6`} onSubmit={generatePlan}>
           <div className="flex items-center gap-3">
             <span className="grid h-10 w-10 place-items-center rounded-lg bg-[#f5f5f7] text-[#51247a]">
-              <ClipboardList className="h-5 w-5" aria-hidden="true" />
+              <UserRound className="h-5 w-5" aria-hidden="true" />
             </span>
             <div>
               <h2 className="text-2xl font-semibold tracking-normal text-[#1d1d1f]">
-                输入规划信息
+                Academic Profile
               </h2>
               <p className="mt-1 text-sm text-[#6e6e73]">
-                第一版只支持 University of Queensland · Bachelor of Economics。
+                这里不再重复输入数据。请先在 Profile 保存你的学习信息。
               </p>
             </div>
           </div>
 
-          <div className="mt-6 grid gap-4">
-            <label className="block">
-              <span className="text-sm font-medium text-[#6e6e73]">Program</span>
-              <input
-                className="mt-2 h-14 rounded-lg border border-[#e5e5ea] bg-[#fbfbfd] px-4 text-lg font-semibold text-[#1d1d1f] outline-none"
-                type="text"
-                value="Bachelor of Economics"
-                readOnly
-              />
-            </label>
-          </div>
-
-          <div className="mt-4 grid gap-4 sm:grid-cols-2">
-            <label className="block">
-              <span className="text-sm font-medium text-[#6e6e73]">Current GPA</span>
-              <input
-                className="mt-2 h-14 rounded-lg border border-[#e5e5ea] bg-white px-4 text-lg font-semibold text-[#1d1d1f] outline-none transition placeholder:text-[#c7c7cc] focus:border-[#51247a] focus:ring-4 focus:ring-[#51247a]/10"
-                type="number"
-                min="0"
-                max="7"
-                step="0.01"
-                inputMode="decimal"
-                value={currentGpa}
-                onChange={(event) => setCurrentGpa(event.target.value)}
-              />
-            </label>
-
-            <label className="block">
-              <span className="text-sm font-medium text-[#6e6e73]">Target GPA</span>
-              <input
-                className="mt-2 h-14 rounded-lg border border-[#e5e5ea] bg-white px-4 text-lg font-semibold text-[#1d1d1f] outline-none transition placeholder:text-[#c7c7cc] focus:border-[#51247a] focus:ring-4 focus:ring-[#51247a]/10"
-                type="number"
-                min="0"
-                max="7"
-                step="0.01"
-                inputMode="decimal"
-                value={targetGpa}
-                onChange={(event) => setTargetGpa(event.target.value)}
-              />
-            </label>
-          </div>
-
-          <div className="mt-6">
-            <p className="text-sm font-medium text-[#6e6e73]">Preferred Workload</p>
-            <div className="mt-2 grid gap-2 sm:grid-cols-3">
-              {workloadOptions.map((option) => (
-                <button
-                  key={option}
-                  type="button"
-                  className={`min-h-12 rounded-lg border px-4 text-sm font-semibold transition ${
-                    preferredWorkload === option
-                      ? "border-[#51247a] bg-[#fbf8ff] text-[#51247a]"
-                      : "border-[#e5e5ea] bg-white text-[#6e6e73] hover:bg-[#f5f5f7] hover:text-[#1d1d1f]"
-                  }`}
-                  onClick={() => setPreferredWorkload(option)}
-                >
-                  {option}
-                </button>
-              ))}
+          <div className="mt-6 grid gap-3 sm:grid-cols-2">
+            <div className={`${softPanelClass} p-4`}>
+              <p className="text-xs font-medium uppercase text-[#86868b]">Program</p>
+              <p className="mt-2 text-base font-semibold text-[#1d1d1f]">{profile.program}</p>
+              <p className="mt-1 text-sm text-[#6e6e73]">{profile.university}</p>
+            </div>
+            <div className={`${softPanelClass} p-4`}>
+              <p className="text-xs font-medium uppercase text-[#86868b]">Expected Graduation</p>
+              <p className="mt-2 text-base font-semibold text-[#1d1d1f]">
+                {profile.expectedGraduationSemester || "Not set"}
+              </p>
+              <p className="mt-1 text-sm text-[#6e6e73]">来自 Academic Profile</p>
+            </div>
+            <div className={`${softPanelClass} p-4`}>
+              <p className="text-xs font-medium uppercase text-[#86868b]">Current GPA</p>
+              <p className="mt-2 text-3xl font-semibold text-[#1d1d1f]">
+                {profile.currentGpa || "-"}
+              </p>
+            </div>
+            <div className={`${softPanelClass} p-4`}>
+              <p className="text-xs font-medium uppercase text-[#86868b]">Target GPA</p>
+              <p className="mt-2 text-3xl font-semibold text-[#1d1d1f]">
+                {profile.targetGpa || "-"}
+              </p>
+            </div>
+            <div className={`${softPanelClass} p-4`}>
+              <p className="text-xs font-medium uppercase text-[#86868b]">Preferred Workload</p>
+              <p className="mt-2 text-3xl font-semibold text-[#1d1d1f]">
+                {profile.preferredWorkload}
+              </p>
+            </div>
+            <div className={`${softPanelClass} p-4`}>
+              <p className="text-xs font-medium uppercase text-[#86868b]">Completed Courses</p>
+              <p className="mt-2 text-3xl font-semibold text-[#1d1d1f]">
+                {profile.completedCourses.length}
+              </p>
             </div>
           </div>
 
-          <div className="mt-6">
+          <div className="mt-5 rounded-lg border border-[#e5e5ea] bg-white p-4">
             <div className="flex items-center justify-between gap-3">
-              <div>
-                <p className="text-sm font-medium text-[#6e6e73]">Completed Courses</p>
-                <p className="mt-1 text-sm text-[#86868b]">
-                  已选择 {completedCourses.length} 门课程
-                </p>
-              </div>
-              <button
-                type="button"
-                className="rounded-full border border-[#e5e5ea] bg-white px-3 py-1.5 text-xs font-semibold text-[#6e6e73] transition hover:bg-[#f5f5f7]"
-                onClick={() => setCompletedCourses([])}
+              <p className="text-sm font-semibold text-[#1d1d1f]">已完成课程</p>
+              <Link
+                href="/profile"
+                className="rounded-full border border-[#e5e5ea] bg-white px-3 py-1.5 text-xs font-semibold text-[#6e6e73] transition hover:bg-[#f5f5f7] hover:text-[#1d1d1f]"
               >
-                Clear
-              </button>
+                Edit Profile
+              </Link>
             </div>
 
-            <div className="mt-4 grid gap-3 md:grid-cols-2">
-              {uqBachelorOfEconomicsCourses.map((course) => {
-                const checked = completedCourseSet.has(course.code);
-
-                return (
-                  <label
+            <div className="mt-3 flex flex-wrap gap-2">
+              {completedCourseDetails.length ? (
+                completedCourseDetails.map((course) => (
+                  <span
                     key={course.code}
-                    className={`flex min-h-20 cursor-pointer items-start gap-3 rounded-lg border p-4 transition ${
-                      checked
-                        ? "border-[#51247a] bg-[#fbf8ff]"
-                        : "border-[#e5e5ea] bg-[#fbfbfd] hover:bg-white"
-                    }`}
+                    className="rounded-full border border-[#e5e5ea] bg-[#fbfbfd] px-3 py-1.5 text-xs font-semibold text-[#1d1d1f]"
+                    title={course.name}
                   >
-                    <input
-                      className="mt-1 h-4 w-4 accent-[#51247a]"
-                      type="checkbox"
-                      checked={checked}
-                      onChange={() => toggleCompletedCourse(course.code)}
-                    />
-                    <span className="min-w-0">
-                      <span className="block text-sm font-semibold text-[#1d1d1f]">
-                        {course.code}
-                      </span>
-                      <span className="mt-1 block text-sm leading-5 text-[#6e6e73]">
-                        {course.name}
-                      </span>
-                    </span>
-                  </label>
-                );
-              })}
+                    {course.code}
+                  </span>
+                ))
+              ) : (
+                <p className="text-sm leading-6 text-[#86868b]">
+                  还没有选择已完成课程。请先完善 Academic Profile。
+                </p>
+              )}
             </div>
           </div>
 
           {formError ? (
             <div className="mt-5 rounded-lg border border-[#fed7aa] bg-[#fff7ed] px-4 py-3 text-sm leading-6 text-[#9a3412]">
-              {formError}
+              {formError}{" "}
+              <Link href="/profile" className="font-semibold underline underline-offset-4">
+                打开 Academic Profile
+              </Link>
             </div>
           ) : null}
 
-          <button
-            type="submit"
-            className="mt-6 inline-flex min-h-12 w-full items-center justify-center gap-2 rounded-lg bg-[#51247a] px-4 text-sm font-semibold text-white transition hover:bg-[#3f1c62] sm:w-auto"
-          >
-            <Sparkles className="h-4 w-4" aria-hidden="true" />
-            Generate Semester Plan
-          </button>
+          <div className="mt-6 flex flex-col gap-3 sm:flex-row">
+            <button
+              type="submit"
+              className="inline-flex min-h-12 items-center justify-center gap-2 rounded-lg bg-[#51247a] px-4 text-sm font-semibold text-white transition hover:bg-[#3f1c62]"
+            >
+              <Sparkles className="h-4 w-4" aria-hidden="true" />
+              Generate Semester Plan
+            </button>
+            <Link
+              href="/profile"
+              className="inline-flex min-h-12 items-center justify-center gap-2 rounded-lg border border-[#e5e5ea] bg-white px-4 text-sm font-semibold text-[#1d1d1f] transition hover:bg-[#f5f5f7]"
+            >
+              <UserRound className="h-4 w-4" aria-hidden="true" />
+              Edit Academic Profile
+            </Link>
+          </div>
         </form>
 
         <aside className="grid gap-4 lg:sticky lg:top-24">
@@ -460,7 +399,7 @@ export default function CoursePlannerPage() {
               Recommended Courses
             </h2>
             <p className="mt-1 text-sm text-[#6e6e73]">
-              推荐结果来自本地 Mock Data 和规则引擎。
+              推荐结果来自 Academic Profile、本地 Mock Data 和规则引擎。
             </p>
           </div>
         </div>
@@ -533,7 +472,7 @@ export default function CoursePlannerPage() {
             ))
           ) : (
             <div className={`${softPanelClass} p-5 text-sm leading-6 text-[#6e6e73]`}>
-              输入 GPA 和已完成课程后，点击 Generate Semester Plan 生成推荐课程。
+              先保存 Academic Profile，然后点击 Generate Semester Plan 生成推荐课程。
             </div>
           )}
         </div>
