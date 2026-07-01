@@ -8,9 +8,11 @@ import {
   Database,
   Gauge,
   LayoutDashboard,
+  RotateCcw,
   Settings
 } from "lucide-react";
 import { useLanguage } from "@/components/LanguageProvider";
+import { clear as clearStorage } from "@/lib/storage";
 
 const navItems = [
   { href: "/", key: "dashboard", icon: LayoutDashboard, active: true },
@@ -26,6 +28,8 @@ const copy = {
     subtitle: "经济学学士 MVP",
     settings: "设置",
     comingSoon: "暂未开放",
+    resetAllData: "Reset All Data",
+    resetConfirm: "确定要清空所有本地数据吗？此操作会重置 GPA、Course Planner 和语言设置。",
     nav: {
       dashboard: "仪表盘",
       gpaPlanner: "GPA 规划",
@@ -39,6 +43,9 @@ const copy = {
     subtitle: "Bachelor of Economics MVP",
     settings: "Settings",
     comingSoon: "Coming soon",
+    resetAllData: "Reset All Data",
+    resetConfirm:
+      "Clear all local data? This will reset GPA Planner, Course Planner, and language settings.",
     nav: {
       dashboard: "Dashboard",
       gpaPlanner: "GPA Planner",
@@ -78,6 +85,42 @@ function LanguageToggle({ compact = false }) {
         </button>
       ))}
     </div>
+  );
+}
+
+function ResetAllDataButton({ label, confirmMessage, compact = false }) {
+  function resetAllData() {
+    if (!window.confirm(confirmMessage)) {
+      return;
+    }
+
+    clearStorage();
+    window.location.reload();
+  }
+
+  if (compact) {
+    return (
+      <button
+        type="button"
+        className="grid h-10 w-10 place-items-center rounded-full border border-[#e5e5ea] bg-white text-[#86868b] transition hover:bg-[#f5f5f7] hover:text-[#1d1d1f]"
+        onClick={resetAllData}
+        aria-label={label}
+        title={label}
+      >
+        <RotateCcw className="h-4 w-4" aria-hidden="true" />
+      </button>
+    );
+  }
+
+  return (
+    <button
+      type="button"
+      className="mt-3 inline-flex min-h-10 w-full items-center justify-center gap-2 rounded-lg border border-[#e5e5ea] bg-white px-3 text-sm font-semibold text-[#6e6e73] transition hover:bg-[#f5f5f7] hover:text-[#1d1d1f]"
+      onClick={resetAllData}
+    >
+      <RotateCcw className="h-4 w-4" aria-hidden="true" />
+      {label}
+    </button>
   );
 }
 
@@ -156,6 +199,7 @@ export function AppShell({ children }) {
 
           <div className="mt-auto rounded-lg bg-[#f5f5f7] p-2">
             <LanguageToggle />
+            <ResetAllDataButton label={t.resetAllData} confirmMessage={t.resetConfirm} />
           </div>
         </aside>
 
@@ -185,6 +229,11 @@ export function AppShell({ children }) {
                 >
                   <Settings className="h-4 w-4" aria-hidden="true" />
                 </button>
+                <ResetAllDataButton
+                  label={t.resetAllData}
+                  confirmMessage={t.resetConfirm}
+                  compact
+                />
                 <LanguageToggle compact />
               </div>
             </div>
@@ -192,6 +241,21 @@ export function AppShell({ children }) {
 
           <header className="hidden border-b border-[#e5e5ea] bg-white px-6 py-5 lg:block">
             <div className="mx-auto flex max-w-7xl items-center justify-end">
+              <button
+                type="button"
+                className="mr-3 inline-flex min-h-10 items-center gap-2 rounded-full border border-[#e5e5ea] bg-white px-4 text-sm font-semibold text-[#6e6e73] transition hover:bg-[#f5f5f7] hover:text-[#1d1d1f]"
+                onClick={() => {
+                  if (!window.confirm(t.resetConfirm)) {
+                    return;
+                  }
+
+                  clearStorage();
+                  window.location.reload();
+                }}
+              >
+                <RotateCcw className="h-4 w-4" aria-hidden="true" />
+                {t.resetAllData}
+              </button>
               <button
                 type="button"
                 className="inline-flex min-h-10 cursor-not-allowed items-center gap-2 rounded-full border border-[#e5e5ea] bg-white px-4 text-sm font-semibold text-[#a1a1a6]"

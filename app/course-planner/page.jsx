@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import {
   AlertTriangle,
   BookOpen,
@@ -15,21 +15,87 @@ import {
   recommendCourses,
   uqBachelorOfEconomicsProgram
 } from "@/lib/recommendationEngine";
+import { load, save } from "@/lib/storage";
 
 const panelClass = "rounded-lg border border-[#e5e5ea] bg-white shadow-[0_1px_2px_rgba(0,0,0,0.04)]";
 const softPanelClass = "rounded-lg border border-[#e5e5ea] bg-[#fbfbfd]";
+
+const DEFAULT_COURSE_PLANNER_FORM = {
+  currentGpa: "5.80",
+  targetGpa: "6.20",
+  completedCourses: ["ECON1010", "ECON1050"],
+  hasGeneratedPlan: false
+};
 
 function formatCourseMeta(course) {
   return `Level ${course.level} · ${course.units} units · ${course.category}`;
 }
 
 export default function CoursePlannerPage() {
-  const [currentGpa, setCurrentGpa] = useState("5.80");
-  const [targetGpa, setTargetGpa] = useState("6.20");
-  const [completedCourses, setCompletedCourses] = useState(["ECON1010", "ECON1050"]);
+  const [currentGpa, setCurrentGpa] = useState(DEFAULT_COURSE_PLANNER_FORM.currentGpa);
+  const [targetGpa, setTargetGpa] = useState(DEFAULT_COURSE_PLANNER_FORM.targetGpa);
+  const [completedCourses, setCompletedCourses] = useState(
+    DEFAULT_COURSE_PLANNER_FORM.completedCourses
+  );
+  const [hasGeneratedPlan, setHasGeneratedPlan] = useState(
+    DEFAULT_COURSE_PLANNER_FORM.hasGeneratedPlan
+  );
+  const [hasLoadedSavedValues, setHasLoadedSavedValues] = useState(false);
   const [result, setResult] = useState(null);
 
   const completedCourseSet = useMemo(() => new Set(completedCourses), [completedCourses]);
+
+  useEffect(() => {
+    const savedValues = load("coursePlanner", DEFAULT_COURSE_PLANNER_FORM);
+
+    if (typeof savedValues.currentGpa === "string") {
+      setCurrentGpa(savedValues.currentGpa);
+    }
+
+    if (typeof savedValues.targetGpa === "string") {
+      setTargetGpa(savedValues.targetGpa);
+    }
+
+    if (Array.isArray(savedValues.completedCourses)) {
+      setCompletedCourses(
+        savedValues.completedCourses.filter((courseCode) => typeof courseCode === "string")
+      );
+    }
+
+    if (typeof savedValues.hasGeneratedPlan === "boolean") {
+      setHasGeneratedPlan(savedValues.hasGeneratedPlan);
+    }
+
+    setHasLoadedSavedValues(true);
+  }, []);
+
+  useEffect(() => {
+    if (!hasLoadedSavedValues) {
+      return;
+    }
+
+    save("coursePlanner", {
+      currentGpa,
+      targetGpa,
+      completedCourses,
+      hasGeneratedPlan
+    });
+  }, [currentGpa, targetGpa, completedCourses, hasGeneratedPlan, hasLoadedSavedValues]);
+
+  useEffect(() => {
+    if (!hasLoadedSavedValues || !hasGeneratedPlan) {
+      return;
+    }
+
+    setResult(
+      recommendCourses({
+        program: uqBachelorOfEconomicsProgram,
+        currentGpa: Number(currentGpa) || 0,
+        completedCourses,
+        targetGpa: Number(targetGpa) || 0
+      })
+    );
+  }, [currentGpa, targetGpa, completedCourses, hasGeneratedPlan, hasLoadedSavedValues]);
 
   function toggleCompletedCourse(courseCode) {
     setCompletedCourses((currentCourses) =>
@@ -50,6 +116,7 @@ export default function CoursePlannerPage() {
     });
 
     setResult(nextResult);
+    setHasGeneratedPlan(true);
   }
 
   return (

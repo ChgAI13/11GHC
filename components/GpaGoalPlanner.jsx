@@ -10,8 +10,7 @@ import {
   Target,
   TrendingUp
 } from "lucide-react";
-
-const GPA_PLANNER_STORAGE_KEY = "uq-academic-planner-gpa-goal";
+import { load, save } from "@/lib/storage";
 
 const DEFAULT_GPA_FORM = {
   currentGpa: "5.80",
@@ -170,33 +169,25 @@ export function GpaGoalPlanner() {
   const [hasLoadedSavedValues, setHasLoadedSavedValues] = useState(false);
 
   useEffect(() => {
-    try {
-      const savedValues = window.localStorage.getItem(GPA_PLANNER_STORAGE_KEY);
+    const savedValues = load("gpaPlanner", DEFAULT_GPA_FORM);
 
-      if (savedValues) {
-        const parsedValues = JSON.parse(savedValues);
-
-        if (typeof parsedValues.currentGpa === "string") {
-          setCurrentGpa(parsedValues.currentGpa);
-        }
-
-        if (typeof parsedValues.completedCount === "string") {
-          setCompletedCount(parsedValues.completedCount);
-        }
-
-        if (typeof parsedValues.remainingCount === "string") {
-          setRemainingCount(parsedValues.remainingCount);
-        }
-
-        if (typeof parsedValues.targetGpa === "string") {
-          setTargetGpa(parsedValues.targetGpa);
-        }
-      }
-    } catch {
-      window.localStorage.removeItem(GPA_PLANNER_STORAGE_KEY);
-    } finally {
-      setHasLoadedSavedValues(true);
+    if (typeof savedValues.currentGpa === "string") {
+      setCurrentGpa(savedValues.currentGpa);
     }
+
+    if (typeof savedValues.completedCount === "string") {
+      setCompletedCount(savedValues.completedCount);
+    }
+
+    if (typeof savedValues.remainingCount === "string") {
+      setRemainingCount(savedValues.remainingCount);
+    }
+
+    if (typeof savedValues.targetGpa === "string") {
+      setTargetGpa(savedValues.targetGpa);
+    }
+
+    setHasLoadedSavedValues(true);
   }, []);
 
   useEffect(() => {
@@ -204,15 +195,12 @@ export function GpaGoalPlanner() {
       return;
     }
 
-    window.localStorage.setItem(
-      GPA_PLANNER_STORAGE_KEY,
-      JSON.stringify({
-        currentGpa,
-        completedCount,
-        remainingCount,
-        targetGpa
-      })
-    );
+    save("gpaPlanner", {
+      currentGpa,
+      completedCount,
+      remainingCount,
+      targetGpa
+    });
   }, [currentGpa, completedCount, remainingCount, targetGpa, hasLoadedSavedValues]);
 
   const result = useMemo(() => {
