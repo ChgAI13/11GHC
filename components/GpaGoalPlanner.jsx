@@ -12,10 +12,11 @@ import {
   TrendingUp
 } from "lucide-react";
 import { useProfile } from "@/components/ProfileProvider";
-import { uqBachelorOfEconomicsCourses } from "@/data/courses";
+import { uqBachelorOfEconomicsGraduationRules } from "@/data/graduationRules";
 
 const panelClass = "rounded-lg border border-[#e5e5ea] bg-white shadow-[0_1px_2px_rgba(0,0,0,0.04)]";
 const softPanelClass = "rounded-lg border border-[#e5e5ea] bg-[#fbfbfd]";
+const STANDARD_COURSE_UNITS = 2;
 
 function clampNumber(value, min, max) {
   const numericValue = Number(value);
@@ -154,8 +155,11 @@ export function GpaGoalPlanner() {
   const currentGpa = profile.currentGpa;
   const targetGpa = profile.targetGpa;
   const completedCount = String(profile.completedCourses.length);
+  const totalCourseCount = Math.ceil(
+    uqBachelorOfEconomicsGraduationRules.totalUnits / STANDARD_COURSE_UNITS
+  );
   const remainingCount = String(
-    Math.max(uqBachelorOfEconomicsCourses.length - profile.completedCourses.length, 0)
+    Math.max(totalCourseCount - profile.completedCourses.length, 0)
   );
 
   const result = useMemo(() => {
@@ -267,7 +271,7 @@ export function GpaGoalPlanner() {
             <ProfileField
               label="剩余课程数"
               value={remainingCount}
-              helper="根据 Mock Course Database 计算"
+              helper="根据 Mock Degree Rules 计算"
             />
           </div>
 
