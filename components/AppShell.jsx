@@ -15,7 +15,7 @@ import { useLanguage } from "@/components/LanguageProvider";
 const navItems = [
   { href: "/", key: "dashboard", icon: LayoutDashboard, active: true },
   { href: "/gpa", key: "gpaPlanner", icon: Gauge },
-  { href: "#", key: "coursePlanner", icon: BookOpen },
+  { href: "/course-planner", key: "coursePlanner", icon: BookOpen },
   { href: "#", key: "graduationChecker", icon: ClipboardCheck },
   { href: "#", key: "courseDatabase", icon: Database }
 ];

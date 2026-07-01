@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import {
   AlertTriangle,
   BookOpenCheck,
@@ -10,6 +10,18 @@ import {
   Target,
   TrendingUp
 } from "lucide-react";
+
+const GPA_PLANNER_STORAGE_KEY = "uq-academic-planner-gpa-goal";
+
+const DEFAULT_GPA_FORM = {
+  currentGpa: "5.80",
+  completedCount: "16",
+  remainingCount: "8",
+  targetGpa: "6.20"
+};
+
+const panelClass = "rounded-lg border border-[#e5e5ea] bg-white shadow-[0_1px_2px_rgba(0,0,0,0.04)]";
+const softPanelClass = "rounded-lg border border-[#e5e5ea] bg-[#fbfbfd]";
 
 function clampNumber(value, min, max) {
   const numericValue = Number(value);
@@ -34,8 +46,8 @@ function getDifficulty(requiredGpa) {
     return {
       label: "轻松",
       detail: "剩余课程保持稳定即可",
-      badge: "bg-mint text-eucalyptus border-eucalyptus/20",
-      fill: "bg-eucalyptus"
+      badge: "bg-[#f0fdf4] text-[#166534] border-[#bbf7d0]",
+      fill: "bg-[#34c759]"
     };
   }
 
@@ -43,8 +55,8 @@ function getDifficulty(requiredGpa) {
     return {
       label: "中等",
       detail: "需要多数课程达到 Credit 到 Distinction",
-      badge: "bg-white text-ocean border-ocean/20",
-      fill: "bg-ocean"
+      badge: "bg-[#fbfbfd] text-[#51247a] border-[#e5e5ea]",
+      fill: "bg-[#51247a]"
     };
   }
 
@@ -52,16 +64,16 @@ function getDifficulty(requiredGpa) {
     return {
       label: "困难",
       detail: "需要稳定冲 Distinction 到 HD",
-      badge: "bg-[#fff6df] text-[#8a5a00] border-gold/25",
-      fill: "bg-gold"
+      badge: "bg-[#fff7ed] text-[#9a3412] border-[#fed7aa]",
+      fill: "bg-[#ff9f0a]"
     };
   }
 
   return {
     label: "非常困难",
     detail: "基本需要剩余课程接近满分",
-    badge: "bg-[#fff0ec] text-coral border-coral/25",
-    fill: "bg-coral"
+    badge: "bg-[#fef2f2] text-[#b91c1c] border-[#fecaca]",
+    fill: "bg-[#ff3b30]"
   };
 }
 
@@ -134,9 +146,9 @@ function getAdvice(requiredGpa, targetGpa, currentGpa) {
 function Field({ label, value, onChange, placeholder, step = "0.01", max = "7" }) {
   return (
     <label className="block">
-      <span className="text-sm font-black text-ink/70">{label}</span>
+      <span className="text-sm font-medium text-[#6e6e73]">{label}</span>
       <input
-        className="mt-2 h-14 rounded-lg border border-ink/10 bg-white px-4 text-lg font-black text-ink outline-none transition placeholder:text-ink/25 focus:border-eucalyptus focus:ring-4 focus:ring-eucalyptus/15"
+        className="mt-2 h-14 rounded-lg border border-[#e5e5ea] bg-white px-4 text-lg font-semibold text-[#1d1d1f] outline-none transition placeholder:text-[#c7c7cc] focus:border-[#51247a] focus:ring-4 focus:ring-[#51247a]/10"
         type="number"
         min="0"
         max={max}
@@ -151,10 +163,57 @@ function Field({ label, value, onChange, placeholder, step = "0.01", max = "7" }
 }
 
 export function GpaGoalPlanner() {
-  const [currentGpa, setCurrentGpa] = useState("5.80");
-  const [completedCount, setCompletedCount] = useState("16");
-  const [remainingCount, setRemainingCount] = useState("8");
-  const [targetGpa, setTargetGpa] = useState("6.20");
+  const [currentGpa, setCurrentGpa] = useState(DEFAULT_GPA_FORM.currentGpa);
+  const [completedCount, setCompletedCount] = useState(DEFAULT_GPA_FORM.completedCount);
+  const [remainingCount, setRemainingCount] = useState(DEFAULT_GPA_FORM.remainingCount);
+  const [targetGpa, setTargetGpa] = useState(DEFAULT_GPA_FORM.targetGpa);
+  const [hasLoadedSavedValues, setHasLoadedSavedValues] = useState(false);
+
+  useEffect(() => {
+    try {
+      const savedValues = window.localStorage.getItem(GPA_PLANNER_STORAGE_KEY);
+
+      if (savedValues) {
+        const parsedValues = JSON.parse(savedValues);
+
+        if (typeof parsedValues.currentGpa === "string") {
+          setCurrentGpa(parsedValues.currentGpa);
+        }
+
+        if (typeof parsedValues.completedCount === "string") {
+          setCompletedCount(parsedValues.completedCount);
+        }
+
+        if (typeof parsedValues.remainingCount === "string") {
+          setRemainingCount(parsedValues.remainingCount);
+        }
+
+        if (typeof parsedValues.targetGpa === "string") {
+          setTargetGpa(parsedValues.targetGpa);
+        }
+      }
+    } catch {
+      window.localStorage.removeItem(GPA_PLANNER_STORAGE_KEY);
+    } finally {
+      setHasLoadedSavedValues(true);
+    }
+  }, []);
+
+  useEffect(() => {
+    if (!hasLoadedSavedValues) {
+      return;
+    }
+
+    window.localStorage.setItem(
+      GPA_PLANNER_STORAGE_KEY,
+      JSON.stringify({
+        currentGpa,
+        completedCount,
+        remainingCount,
+        targetGpa
+      })
+    );
+  }, [currentGpa, completedCount, remainingCount, targetGpa, hasLoadedSavedValues]);
 
   const result = useMemo(() => {
     const current = clampNumber(currentGpa, 0, 7);
@@ -193,56 +252,56 @@ export function GpaGoalPlanner() {
       : `剩余 ${result.remaining} 门课平均需要达到 ${requiredDisplay}。`;
 
   return (
-    <div className="grid gap-5">
-      <section className="overflow-hidden rounded-lg bg-ink text-white shadow-soft">
-        <div className="grid gap-6 p-5 sm:p-7 lg:grid-cols-[1fr_340px] lg:items-end">
+    <div className="grid gap-7">
+      <section className="pt-2 sm:pt-4">
+        <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_320px] lg:items-end">
           <div>
-            <div className="inline-flex items-center gap-2 rounded-lg bg-white/10 px-3 py-2 text-sm font-black text-white/85">
-              <GraduationCap className="h-4 w-4" aria-hidden="true" />
-              澳洲留学生毕业 GPA 规划
+            <div className="inline-flex items-center gap-2 rounded-full border border-[#e5e5ea] bg-white px-3 py-1.5 text-sm font-medium text-[#6e6e73]">
+              <GraduationCap className="h-4 w-4 text-[#51247a]" aria-hidden="true" />
+              UQ Bachelor of Economics
             </div>
-            <h1 className="mt-5 text-3xl font-black leading-tight tracking-normal sm:text-5xl">
+            <h1 className="mt-6 max-w-3xl text-4xl font-semibold leading-tight tracking-normal text-[#1d1d1f] sm:text-6xl">
               GPA 目标规划器
             </h1>
-            <p className="mt-4 max-w-2xl text-sm leading-7 text-white/72 sm:text-base">
-              输入当前成绩和剩余课程，看看为了达到目标毕业 GPA，接下来每门课平均要拿到多少分。
+            <p className="mt-4 max-w-2xl text-base leading-7 text-[#6e6e73] sm:text-lg">
+              输入当前 GPA、已完成课程和目标 GPA，估算剩余课程平均需要达到多少分。
             </p>
-            <div className="mt-6 grid gap-2 sm:grid-cols-3">
-              {["输入当前成绩", "设定毕业目标", "查看冲刺建议"].map((item, index) => (
-                <div key={item} className="rounded-lg bg-white/10 px-3 py-3">
-                  <p className="text-xs font-black text-white/45">0{index + 1}</p>
-                  <p className="mt-1 text-sm font-black text-white">{item}</p>
-                </div>
-              ))}
-            </div>
           </div>
 
-          <div className="rounded-lg border border-white/10 bg-white/10 p-4">
-            <p className="text-sm font-bold text-white/60">剩余每门课平均需要</p>
+          <div className={`${panelClass} p-5`}>
+            <p className="text-sm font-medium text-[#6e6e73]">剩余每门课平均需要</p>
             <div className="mt-2 flex items-end justify-between gap-3">
-              <p className="text-5xl font-black tracking-normal">{requiredDisplay}</p>
-              <span className={`mb-1 rounded-lg border px-3 py-1.5 text-sm font-black ${result.difficulty.badge}`}>
+              <p className="text-5xl font-semibold tracking-normal text-[#1d1d1f]">
+                {requiredDisplay}
+              </p>
+              <span className={`mb-1 rounded-full border px-3 py-1 text-sm font-semibold ${result.difficulty.badge}`}>
                 {result.difficulty.label}
               </span>
             </div>
-            <p className="mt-3 text-sm leading-6 text-white/68">{statusText}</p>
+            <p className="mt-4 border-t border-[#e5e5ea] pt-4 text-sm leading-6 text-[#6e6e73]">
+              {statusText}
+            </p>
           </div>
         </div>
       </section>
 
-      <div className="grid gap-5 lg:grid-cols-[1fr_380px] lg:items-start">
-        <section className="rounded-lg border border-ink/10 bg-white/90 p-4 shadow-soft backdrop-blur sm:p-5">
+      <div className="grid gap-5 lg:grid-cols-[minmax(0,1fr)_360px] lg:items-start">
+        <section className={`${panelClass} p-5 sm:p-6`}>
           <div className="flex items-center gap-3">
-            <span className="grid h-10 w-10 place-items-center rounded-lg bg-mint text-eucalyptus">
+            <span className="grid h-10 w-10 place-items-center rounded-lg bg-[#f5f5f7] text-[#51247a]">
               <ClipboardList className="h-5 w-5" aria-hidden="true" />
             </span>
             <div>
-              <h2 className="text-xl font-black tracking-normal text-ink">填写你的成绩情况</h2>
-              <p className="mt-1 text-sm text-ink/55">按澳洲常见 7 分制估算，适合先做毕业成绩规划。</p>
+              <h2 className="text-2xl font-semibold tracking-normal text-[#1d1d1f]">
+                填写你的成绩情况
+              </h2>
+              <p className="mt-1 text-sm text-[#6e6e73]">
+                按澳洲常见 7 分制估算，输入会自动保存在当前浏览器。
+              </p>
             </div>
           </div>
 
-          <div className="mt-5 grid gap-4 sm:grid-cols-2">
+          <div className="mt-6 grid gap-4 sm:grid-cols-2">
             <Field
               label="当前 GPA"
               value={currentGpa}
@@ -275,32 +334,32 @@ export function GpaGoalPlanner() {
         </section>
 
         <aside className="grid gap-4 lg:sticky lg:top-24">
-          <div className="rounded-lg border border-ink/10 bg-white p-4 shadow-soft">
+          <div className={`${panelClass} p-5`}>
             <div className="flex items-center justify-between gap-3">
               <div>
-                <p className="text-sm font-black text-ink/55">当前距离目标</p>
-                <p className="mt-1 text-3xl font-black tracking-normal text-ink">
+                <p className="text-sm font-medium text-[#6e6e73]">当前距离目标</p>
+                <p className="mt-1 text-3xl font-semibold tracking-normal text-[#1d1d1f]">
                   {result.gap <= 0 ? "已达标" : `差 ${formatGpa(result.gap)}`}
                 </p>
               </div>
-              <span className="grid h-11 w-11 place-items-center rounded-lg bg-mint text-eucalyptus">
+              <span className="grid h-10 w-10 place-items-center rounded-lg bg-[#f5f5f7] text-[#51247a]">
                 <Target className="h-5 w-5" aria-hidden="true" />
               </span>
             </div>
-            <div className="mt-4 h-3 overflow-hidden rounded-full bg-ink/10">
+            <div className="mt-5 h-2.5 overflow-hidden rounded-full bg-[#f5f5f7]">
               <div
                 className={`h-full rounded-full ${result.difficulty.fill}`}
                 style={{ width: `${result.progress}%` }}
               />
             </div>
-            <p className="mt-2 text-sm leading-6 text-ink/60">
+            <p className="mt-3 text-sm leading-6 text-[#6e6e73]">
               当前 {formatGpa(result.current)} / 目标 {formatGpa(result.target)}
             </p>
           </div>
 
-          <div className={`rounded-lg border p-4 shadow-soft ${result.difficulty.badge}`}>
+          <div className={`rounded-lg border p-5 shadow-[0_1px_2px_rgba(0,0,0,0.04)] ${result.difficulty.badge}`}>
             <div className="flex items-start gap-3">
-              <span className="grid h-10 w-10 shrink-0 place-items-center rounded-lg bg-white/80">
+              <span className="grid h-10 w-10 shrink-0 place-items-center rounded-lg bg-white">
                 {isImpossible ? (
                   <AlertTriangle className="h-5 w-5" aria-hidden="true" />
                 ) : (
@@ -308,33 +367,35 @@ export function GpaGoalPlanner() {
                 )}
               </span>
               <div className="min-w-0">
-                <p className="text-sm font-black opacity-70">达成难度</p>
-                <p className="mt-1 text-3xl font-black tracking-normal">{result.difficulty.label}</p>
+                <p className="text-sm font-medium opacity-70">达成难度</p>
+                <p className="mt-1 text-3xl font-semibold tracking-normal">
+                  {result.difficulty.label}
+                </p>
                 <p className="mt-2 text-sm leading-6 opacity-75">{result.difficulty.detail}</p>
               </div>
             </div>
           </div>
 
-          <div className="rounded-lg border border-ink/10 bg-white p-4 shadow-soft">
+          <div className={`${panelClass} p-5`}>
             <div className="grid grid-cols-2 gap-3">
-              <div className="rounded-lg bg-paper p-3">
-                <p className="text-xs font-black text-ink/45">已完成</p>
-                <p className="mt-1 text-2xl font-black text-ink">{result.completed}</p>
+              <div className={`${softPanelClass} p-4`}>
+                <p className="text-xs font-medium text-[#86868b]">已完成</p>
+                <p className="mt-1 text-2xl font-semibold text-[#1d1d1f]">{result.completed}</p>
               </div>
-              <div className="rounded-lg bg-paper p-3">
-                <p className="text-xs font-black text-ink/45">剩余</p>
-                <p className="mt-1 text-2xl font-black text-ink">{result.remaining}</p>
+              <div className={`${softPanelClass} p-4`}>
+                <p className="text-xs font-medium text-[#86868b]">剩余</p>
+                <p className="mt-1 text-2xl font-semibold text-[#1d1d1f]">{result.remaining}</p>
               </div>
             </div>
           </div>
         </aside>
       </div>
 
-      <section className="rounded-lg border border-ink/10 bg-white p-4 shadow-soft sm:p-5">
+      <section className={`${panelClass} p-5 sm:p-6`}>
         <div className="flex items-center gap-3">
           <span
             className={`grid h-10 w-10 place-items-center rounded-lg ${
-              isImpossible ? "bg-[#fff0ec] text-coral" : "bg-mint text-eucalyptus"
+              isImpossible ? "bg-[#fef2f2] text-[#b91c1c]" : "bg-[#f5f5f7] text-[#51247a]"
             }`}
           >
             {isImpossible ? (
@@ -344,44 +405,46 @@ export function GpaGoalPlanner() {
             )}
           </span>
           <div>
-            <h2 className="text-xl font-black tracking-normal text-ink">智能建议：{result.advice.title}</h2>
-            <p className="mt-1 text-sm text-ink/55">
-              根据你的目标和剩余课程数量生成，适合澳洲大学 7 分制 GPA 场景。
+            <h2 className="text-2xl font-semibold tracking-normal text-[#1d1d1f]">
+              智能建议：{result.advice.title}
+            </h2>
+            <p className="mt-1 text-sm text-[#6e6e73]">
+              根据你的目标和剩余课程数量生成，适合 UQ 经济学学士的 MVP 规划场景。
             </p>
           </div>
         </div>
 
-        <div className="mt-5 grid gap-3 md:grid-cols-3">
+        <div className="mt-6 grid gap-3 md:grid-cols-3">
           {result.advice.items.map((item, index) => (
-            <div key={item} className="rounded-lg border border-ink/10 bg-paper p-4">
-              <div className="mb-3 grid h-8 w-8 place-items-center rounded-lg bg-white text-sm font-black text-eucalyptus">
+            <div key={item} className={`${softPanelClass} p-4`}>
+              <div className="mb-3 grid h-8 w-8 place-items-center rounded-lg bg-white text-sm font-semibold text-[#51247a]">
                 {index + 1}
               </div>
-              <p className="text-sm leading-6 text-ink/72">{item}</p>
+              <p className="text-sm leading-6 text-[#6e6e73]">{item}</p>
             </div>
           ))}
         </div>
       </section>
 
       <section className="grid gap-3 sm:grid-cols-3">
-        <div className="rounded-lg border border-ink/10 bg-white/80 p-4">
-          <BookOpenCheck className="h-5 w-5 text-eucalyptus" aria-hidden="true" />
-          <p className="mt-3 text-sm font-black text-ink">公式</p>
-          <p className="mt-1 text-sm leading-6 text-ink/60">
-            剩余平均 =（目标 GPA × 总课程数 - 当前 GPA × 已完成课程数）÷ 剩余课程数
+        <div className={`${panelClass} p-4`}>
+          <BookOpenCheck className="h-5 w-5 text-[#51247a]" aria-hidden="true" />
+          <p className="mt-3 text-sm font-semibold text-[#1d1d1f]">公式</p>
+          <p className="mt-1 text-sm leading-6 text-[#6e6e73]">
+            剩余平均 =（目标 GPA x 总课程数 - 当前 GPA x 已完成课程数）÷ 剩余课程数
           </p>
         </div>
-        <div className="rounded-lg border border-ink/10 bg-white/80 p-4">
-          <Target className="h-5 w-5 text-ocean" aria-hidden="true" />
-          <p className="mt-3 text-sm font-black text-ink">难度区间</p>
-          <p className="mt-1 text-sm leading-6 text-ink/60">
+        <div className={`${panelClass} p-4`}>
+          <Target className="h-5 w-5 text-[#51247a]" aria-hidden="true" />
+          <p className="mt-3 text-sm font-semibold text-[#1d1d1f]">难度区间</p>
+          <p className="mt-1 text-sm leading-6 text-[#6e6e73]">
             ≤5.5 轻松，5.5-6.2 中等，6.2-6.7 困难，超过 6.7 非常困难。
           </p>
         </div>
-        <div className="rounded-lg border border-ink/10 bg-white/80 p-4">
-          <GraduationCap className="h-5 w-5 text-coral" aria-hidden="true" />
-          <p className="mt-3 text-sm font-black text-ink">提醒</p>
-          <p className="mt-1 text-sm leading-6 text-ink/60">
+        <div className={`${panelClass} p-4`}>
+          <GraduationCap className="h-5 w-5 text-[#51247a]" aria-hidden="true" />
+          <p className="mt-3 text-sm font-semibold text-[#1d1d1f]">提醒</p>
+          <p className="mt-1 text-sm leading-6 text-[#6e6e73]">
             不同学校和学院可能有自己的 GPA 或 WAM 规则，正式用途请以学校说明为准。
           </p>
         </div>
