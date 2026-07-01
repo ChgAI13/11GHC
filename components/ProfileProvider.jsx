@@ -4,6 +4,7 @@ import { createContext, useContext, useEffect, useMemo, useState } from "react";
 import {
   DEFAULT_ACADEMIC_PROFILE,
   loadProfile,
+  resetProfile,
   saveProfile,
   subscribe,
   updateProfile
@@ -25,6 +26,7 @@ export function ProfileProvider({ children }) {
   const value = useMemo(
     () => ({
       profile,
+      resetProfile,
       saveProfile,
       updateProfile
     }),

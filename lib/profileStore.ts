@@ -169,6 +169,18 @@ export function updateProfile(profileUpdate: Partial<AcademicProfile>): Academic
   });
 }
 
+export function resetProfile(): AcademicProfile {
+  if (canUseStorage()) {
+    window.localStorage.removeItem(STORAGE_KEY);
+  }
+
+  currentProfile = DEFAULT_ACADEMIC_PROFILE;
+  hasHydratedProfile = true;
+  notifySubscribers();
+
+  return currentProfile;
+}
+
 export function subscribe(subscriber: ProfileSubscriber) {
   subscribers.add(subscriber);
 

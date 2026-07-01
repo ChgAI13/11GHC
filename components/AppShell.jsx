@@ -12,7 +12,7 @@ import {
   Settings
 } from "lucide-react";
 import { useLanguage } from "@/components/LanguageProvider";
-import { clear as clearStorage } from "@/lib/storage";
+import { useProfile } from "@/components/ProfileProvider";
 
 const navItems = [
   { href: "/", key: "dashboard", icon: LayoutDashboard, active: true },
@@ -30,7 +30,7 @@ const copy = {
     comingSoon: "暂未开放",
     resetAllData: "Reset All Data",
     resetConfirm:
-      "确定要清空所有本地数据吗？此操作会重置 Academic Profile、GPA、Course Planner 和语言设置。",
+      "确定要清空 Academic Profile 吗？Dashboard、GPA、Course Planner 和 Graduation Checker 会同步重置。",
     nav: {
       dashboard: "仪表盘",
       gpaPlanner: "GPA 规划",
@@ -46,7 +46,7 @@ const copy = {
     comingSoon: "Coming soon",
     resetAllData: "Reset All Data",
     resetConfirm:
-      "Clear all local data? This will reset Academic Profile, GPA Planner, Course Planner, and language settings.",
+      "Clear Academic Profile? Dashboard, GPA Planner, Course Planner, and Graduation Checker will reset together.",
     nav: {
       dashboard: "Dashboard",
       gpaPlanner: "GPA Planner",
@@ -89,14 +89,13 @@ function LanguageToggle({ compact = false }) {
   );
 }
 
-function ResetAllDataButton({ label, confirmMessage, compact = false }) {
+function ResetAllDataButton({ label, confirmMessage, resetProfile, compact = false }) {
   function resetAllData() {
     if (!window.confirm(confirmMessage)) {
       return;
     }
 
-    clearStorage();
-    window.location.reload();
+    resetProfile();
   }
 
   if (compact) {
@@ -165,6 +164,7 @@ function NavItem({ item, label, comingSoon, pathname, mobile = false }) {
 export function AppShell({ children }) {
   const pathname = usePathname();
   const { language } = useLanguage();
+  const { resetProfile } = useProfile();
   const t = copy[language];
   const navLabel = language === "zh" ? "主导航" : "Main navigation";
 
@@ -200,7 +200,11 @@ export function AppShell({ children }) {
 
           <div className="mt-auto rounded-lg bg-[#f5f5f7] p-2">
             <LanguageToggle />
-            <ResetAllDataButton label={t.resetAllData} confirmMessage={t.resetConfirm} />
+            <ResetAllDataButton
+              label={t.resetAllData}
+              confirmMessage={t.resetConfirm}
+              resetProfile={resetProfile}
+            />
           </div>
         </aside>
 
@@ -232,6 +236,7 @@ export function AppShell({ children }) {
                 <ResetAllDataButton
                   label={t.resetAllData}
                   confirmMessage={t.resetConfirm}
+                  resetProfile={resetProfile}
                   compact
                 />
                 <LanguageToggle compact />
@@ -249,8 +254,7 @@ export function AppShell({ children }) {
                     return;
                   }
 
-                  clearStorage();
-                  window.location.reload();
+                  resetProfile();
                 }}
               >
                 <RotateCcw className="h-4 w-4" aria-hidden="true" />
