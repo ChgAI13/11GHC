@@ -24,8 +24,11 @@ const DEFAULT_COURSE_PLANNER_FORM = {
   currentGpa: "5.80",
   targetGpa: "6.20",
   completedCourses: ["ECON1010", "ECON1050"],
+  preferredWorkload: "Medium",
   hasGeneratedPlan: false
 };
+
+const workloadOptions = ["Light", "Medium", "Heavy"];
 
 function formatCourseMeta(course) {
   return `Level ${course.level} · ${course.units} units · ${course.category}`;
@@ -37,11 +40,15 @@ export default function CoursePlannerPage() {
   const [completedCourses, setCompletedCourses] = useState(
     DEFAULT_COURSE_PLANNER_FORM.completedCourses
   );
+  const [preferredWorkload, setPreferredWorkload] = useState(
+    DEFAULT_COURSE_PLANNER_FORM.preferredWorkload
+  );
   const [hasGeneratedPlan, setHasGeneratedPlan] = useState(
     DEFAULT_COURSE_PLANNER_FORM.hasGeneratedPlan
   );
   const [hasLoadedSavedValues, setHasLoadedSavedValues] = useState(false);
   const [result, setResult] = useState(null);
+  const [formError, setFormError] = useState("");
 
   const completedCourseSet = useMemo(() => new Set(completedCourses), [completedCourses]);
 
@@ -62,6 +69,10 @@ export default function CoursePlannerPage() {
       );
     }
 
+    if (typeof savedValues.preferredWorkload === "string") {
+      setPreferredWorkload(savedValues.preferredWorkload);
+    }
+
     if (typeof savedValues.hasGeneratedPlan === "boolean") {
       setHasGeneratedPlan(savedValues.hasGeneratedPlan);
     }
@@ -78,9 +89,17 @@ export default function CoursePlannerPage() {
       currentGpa,
       targetGpa,
       completedCourses,
+      preferredWorkload,
       hasGeneratedPlan
     });
-  }, [currentGpa, targetGpa, completedCourses, hasGeneratedPlan, hasLoadedSavedValues]);
+  }, [
+    currentGpa,
+    targetGpa,
+    completedCourses,
+    preferredWorkload,
+    hasGeneratedPlan,
+    hasLoadedSavedValues
+  ]);
 
   useEffect(() => {
     if (!hasLoadedSavedValues || !hasGeneratedPlan) {
@@ -92,10 +111,18 @@ export default function CoursePlannerPage() {
         program: uqBachelorOfEconomicsProgram,
         currentGpa: Number(currentGpa) || 0,
         completedCourses,
-        targetGpa: Number(targetGpa) || 0
+        targetGpa: Number(targetGpa) || 0,
+        preferredWorkload
       })
     );
-  }, [currentGpa, targetGpa, completedCourses, hasGeneratedPlan, hasLoadedSavedValues]);
+  }, [
+    currentGpa,
+    targetGpa,
+    completedCourses,
+    preferredWorkload,
+    hasGeneratedPlan,
+    hasLoadedSavedValues
+  ]);
 
   function toggleCompletedCourse(courseCode) {
     setCompletedCourses((currentCourses) =>
@@ -107,15 +134,40 @@ export default function CoursePlannerPage() {
 
   function generatePlan(event) {
     event.preventDefault();
+    const currentGpaValue = Number(currentGpa);
+    const targetGpaValue = Number(targetGpa);
+
+    if (!Number.isFinite(currentGpaValue) || currentGpa.trim() === "") {
+      setFormError("Please enter your current GPA before generating a semester plan.");
+      setResult(null);
+      setHasGeneratedPlan(false);
+      return;
+    }
+
+    if (!Number.isFinite(targetGpaValue) || targetGpa.trim() === "") {
+      setFormError("Please enter your target GPA before generating a semester plan.");
+      setResult(null);
+      setHasGeneratedPlan(false);
+      return;
+    }
+
+    if (completedCourses.length === 0) {
+      setFormError("Please select at least one completed course.");
+      setResult(null);
+      setHasGeneratedPlan(false);
+      return;
+    }
 
     const nextResult = recommendCourses({
       program: uqBachelorOfEconomicsProgram,
-      currentGpa: Number(currentGpa) || 0,
+      currentGpa: currentGpaValue,
       completedCourses,
-      targetGpa: Number(targetGpa) || 0
+      targetGpa: targetGpaValue,
+      preferredWorkload
     });
 
     setResult(nextResult);
+    setFormError("");
     setHasGeneratedPlan(true);
   }
 
@@ -164,7 +216,19 @@ export default function CoursePlannerPage() {
             </div>
           </div>
 
-          <div className="mt-6 grid gap-4 sm:grid-cols-2">
+          <div className="mt-6 grid gap-4">
+            <label className="block">
+              <span className="text-sm font-medium text-[#6e6e73]">Program</span>
+              <input
+                className="mt-2 h-14 rounded-lg border border-[#e5e5ea] bg-[#fbfbfd] px-4 text-lg font-semibold text-[#1d1d1f] outline-none"
+                type="text"
+                value="Bachelor of Economics"
+                readOnly
+              />
+            </label>
+          </div>
+
+          <div className="mt-4 grid gap-4 sm:grid-cols-2">
             <label className="block">
               <span className="text-sm font-medium text-[#6e6e73]">Current GPA</span>
               <input
@@ -192,6 +256,26 @@ export default function CoursePlannerPage() {
                 onChange={(event) => setTargetGpa(event.target.value)}
               />
             </label>
+          </div>
+
+          <div className="mt-6">
+            <p className="text-sm font-medium text-[#6e6e73]">Preferred Workload</p>
+            <div className="mt-2 grid gap-2 sm:grid-cols-3">
+              {workloadOptions.map((option) => (
+                <button
+                  key={option}
+                  type="button"
+                  className={`min-h-12 rounded-lg border px-4 text-sm font-semibold transition ${
+                    preferredWorkload === option
+                      ? "border-[#51247a] bg-[#fbf8ff] text-[#51247a]"
+                      : "border-[#e5e5ea] bg-white text-[#6e6e73] hover:bg-[#f5f5f7] hover:text-[#1d1d1f]"
+                  }`}
+                  onClick={() => setPreferredWorkload(option)}
+                >
+                  {option}
+                </button>
+              ))}
+            </div>
           </div>
 
           <div className="mt-6">
@@ -244,12 +328,18 @@ export default function CoursePlannerPage() {
             </div>
           </div>
 
+          {formError ? (
+            <div className="mt-5 rounded-lg border border-[#fed7aa] bg-[#fff7ed] px-4 py-3 text-sm leading-6 text-[#9a3412]">
+              {formError}
+            </div>
+          ) : null}
+
           <button
             type="submit"
             className="mt-6 inline-flex min-h-12 w-full items-center justify-center gap-2 rounded-lg bg-[#51247a] px-4 text-sm font-semibold text-white transition hover:bg-[#3f1c62] sm:w-auto"
           >
             <Sparkles className="h-4 w-4" aria-hidden="true" />
-            Generate Plan
+            Generate Semester Plan
           </button>
         </form>
 
@@ -267,8 +357,39 @@ export default function CoursePlannerPage() {
               </span>
             </div>
             <p className="mt-4 border-t border-[#e5e5ea] pt-4 text-sm leading-6 text-[#6e6e73]">
-              {result ? result.reason : "点击 Generate Plan 后显示推荐总结。"}
+              {result ? result.reason : "点击 Generate Semester Plan 后显示推荐总结。"}
             </p>
+          </div>
+
+          <div className={`${panelClass} p-5`}>
+            <div className="flex items-center justify-between gap-3">
+              <div>
+                <p className="text-sm font-medium text-[#6e6e73]">
+                  Estimated Semester Workload
+                </p>
+                <p className="mt-1 text-3xl font-semibold tracking-normal text-[#1d1d1f]">
+                  {result ? result.estimatedSemesterWorkload.label : "-"}
+                </p>
+              </div>
+              <span className="grid h-10 w-10 place-items-center rounded-lg bg-[#f5f5f7] text-[#51247a]">
+                <ClipboardList className="h-5 w-5" aria-hidden="true" />
+              </span>
+            </div>
+
+            {result ? (
+              <div className="mt-4 grid gap-2 border-t border-[#e5e5ea] pt-4 text-sm leading-6 text-[#6e6e73]">
+                <p>{result.estimatedSemesterWorkload.summary}</p>
+                <p>
+                  Preferred: {result.estimatedSemesterWorkload.preferredWorkload} · Units:{" "}
+                  {result.estimatedSemesterWorkload.totalUnits} · Workload Score:{" "}
+                  {result.estimatedSemesterWorkload.workloadScore}
+                </p>
+              </div>
+            ) : (
+              <p className="mt-4 border-t border-[#e5e5ea] pt-4 text-sm leading-6 text-[#86868b]">
+                Generate a semester plan to estimate workload.
+              </p>
+            )}
           </div>
 
           <div className={`${panelClass} p-5`}>
@@ -300,6 +421,34 @@ export default function CoursePlannerPage() {
           </div>
         </aside>
       </div>
+
+      <section className={`${panelClass} p-5 sm:p-6`}>
+        <div className="flex items-center gap-3">
+          <span className="grid h-10 w-10 place-items-center rounded-lg bg-[#f5f5f7] text-[#51247a]">
+            <CheckCircle2 className="h-5 w-5" aria-hidden="true" />
+          </span>
+          <div>
+            <h2 className="text-2xl font-semibold tracking-normal text-[#1d1d1f]">Reasons</h2>
+            <p className="mt-1 text-sm text-[#6e6e73]">
+              推荐引擎给出的整体判断依据。
+            </p>
+          </div>
+        </div>
+
+        <div className="mt-6 grid gap-3">
+          {result?.reasons.length ? (
+            result.reasons.map((reason) => (
+              <p key={reason} className={`${softPanelClass} p-4 text-sm leading-6 text-[#6e6e73]`}>
+                {reason}
+              </p>
+            ))
+          ) : (
+            <div className={`${softPanelClass} p-5 text-sm leading-6 text-[#6e6e73]`}>
+              生成学期计划后，这里会显示推荐原因。
+            </div>
+          )}
+        </div>
+      </section>
 
       <section className={`${panelClass} p-5 sm:p-6`}>
         <div className="flex items-center gap-3">
@@ -384,7 +533,7 @@ export default function CoursePlannerPage() {
             ))
           ) : (
             <div className={`${softPanelClass} p-5 text-sm leading-6 text-[#6e6e73]`}>
-              输入 GPA 和已完成课程后，点击 Generate Plan 生成推荐课程。
+              输入 GPA 和已完成课程后，点击 Generate Semester Plan 生成推荐课程。
             </div>
           )}
         </div>

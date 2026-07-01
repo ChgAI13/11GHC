@@ -13,7 +13,7 @@ test("recommends ECON2010 after ECON1010 is completed", () => {
     currentGpa: 6.1,
     completedCourses: ["ECON1010", "ECON1050"],
     targetGpa: 6.2,
-    preferredWorkload: "Balanced"
+    preferredWorkload: "Medium"
   });
 
   assert.equal(result.recommendedCourses[0].course.code, "ECON2010");
@@ -25,7 +25,7 @@ test("recommends ECON2020 after ECON1020 is completed", () => {
     currentGpa: 6.0,
     completedCourses: ["ECON1020"],
     targetGpa: 6.2,
-    preferredWorkload: "Balanced"
+    preferredWorkload: "Medium"
   });
 
   assert.ok(result.recommendedCourses.some((item) => item.course.code === "ECON2020"));
@@ -37,7 +37,7 @@ test("adds prerequisite warning when a recommended course is missing prerequisit
     currentGpa: 6.0,
     completedCourses: ["ECON1010"],
     targetGpa: 6.2,
-    preferredWorkload: "Balanced"
+    preferredWorkload: "Medium"
   });
 
   assert.ok(result.recommendedCourses.some((item) => item.course.code === "ECON2010"));
@@ -71,7 +71,7 @@ test("avoids difficulty 5 courses when GPA is below 5.5", () => {
     currentGpa: 5.2,
     completedCourses: [],
     targetGpa: 6.0,
-    preferredWorkload: "Balanced"
+    preferredWorkload: "Medium"
   });
 
   assert.ok(!result.recommendedCourses.some((item) => item.course.code === "ECON3999"));
@@ -85,7 +85,7 @@ test("avoids high math courses when current semester already has two high math c
     completedCourses: ["ECON1010", "ECON1050"],
     currentSemesterCourses: ["ECON1050", "ECON1310"],
     targetGpa: 6.3,
-    preferredWorkload: "Balanced"
+    preferredWorkload: "Medium"
   });
 
   assert.ok(!result.recommendedCourses.some((item) => item.course.code === "ECON2010"));
@@ -98,7 +98,7 @@ test("prioritises core courses for graduation progress", () => {
     currentGpa: 6.1,
     completedCourses: ["ECON1010", "ECON1020", "ECON1050"],
     targetGpa: 6.2,
-    preferredWorkload: "Balanced"
+    preferredWorkload: "Medium"
   });
 
   const topCodes = result.recommendedCourses.slice(0, 2).map((item) => item.course.code);
@@ -165,7 +165,7 @@ test("does not recommend more than two high math courses in the same semester", 
     currentGpa: 6.5,
     completedCourses: ["ECON1010", "ECON1020"],
     targetGpa: 6.7,
-    preferredWorkload: "Intensive",
+    preferredWorkload: "Heavy",
     maxRecommendations: 5
   });
   const highMathCount = result.recommendedCourses.filter(
@@ -174,4 +174,23 @@ test("does not recommend more than two high math courses in the same semester", 
 
   assert.ok(highMathCount <= 2);
   assert.ok(result.warnings.some((warning) => warning.includes("more than two high-math courses")));
+});
+
+test("generates the requested medium workload semester plan scenario", () => {
+  const result = recommendCourses({
+    program: uqBachelorOfEconomicsProgram,
+    currentGpa: 5.2,
+    completedCourses: ["ECON1010", "ECON1020"],
+    targetGpa: 6.0,
+    preferredWorkload: "Medium"
+  });
+  const recommendedCodes = result.recommendedCourses.map((item) => item.course.code);
+
+  assert.ok(recommendedCodes.includes("ECON2010"));
+  assert.ok(recommendedCodes.includes("ECON2020"));
+  assert.ok(result.difficultyScore > 0);
+  assert.ok(result.reasons.length > 0);
+  assert.ok(result.warnings.length > 0);
+  assert.ok(result.estimatedSemesterWorkload.totalCourses > 0);
+  assert.equal(result.estimatedSemesterWorkload.preferredWorkload, "Medium");
 });

@@ -9,14 +9,15 @@ export interface Program {
 
 export type CourseInput = string | Pick<Course, "code">;
 
-export type PreferredWorkload = "Light" | "Balanced" | "Intensive";
+export type PreferredWorkload = "Light" | "Medium" | "Heavy";
+export type PreferredWorkloadInput = PreferredWorkload | "Balanced" | "Intensive";
 
 export interface RecommendationInput {
   program: Program;
   currentGpa: number;
   completedCourses: CourseInput[];
   targetGpa: number;
-  preferredWorkload?: PreferredWorkload;
+  preferredWorkload?: PreferredWorkloadInput;
   currentSemesterCourses?: CourseInput[];
   maxRecommendations?: number;
 }
@@ -36,7 +37,7 @@ export interface EstimatedSemesterWorkload {
   averageMathIntensity: number;
   highMathCourseCount: number;
   workloadScore: number;
-  label: "Light" | "Balanced" | "Heavy";
+  label: "Light" | "Medium" | "Heavy";
   summary: string;
 }
 
@@ -62,7 +63,7 @@ interface RuleContext {
   reasons: string[];
 }
 
-interface RequiredRecommendationInput extends RecommendationInput {
+interface RequiredRecommendationInput extends Omit<RecommendationInput, "preferredWorkload"> {
   preferredWorkload: PreferredWorkload;
   maxRecommendations: number;
 }
@@ -76,7 +77,7 @@ export const uqBachelorOfEconomicsProgram: Program = {
 };
 
 function normalizeInput(input: RecommendationInput): RequiredRecommendationInput {
-  const preferredWorkload = input.preferredWorkload ?? "Balanced";
+  const preferredWorkload = normalizePreferredWorkload(input.preferredWorkload);
 
   return {
     ...input,
@@ -85,13 +86,25 @@ function normalizeInput(input: RecommendationInput): RequiredRecommendationInput
   };
 }
 
+function normalizePreferredWorkload(preferredWorkload?: PreferredWorkloadInput): PreferredWorkload {
+  if (preferredWorkload === "Light") {
+    return "Light";
+  }
+
+  if (preferredWorkload === "Heavy" || preferredWorkload === "Intensive") {
+    return "Heavy";
+  }
+
+  return "Medium";
+}
+
 function getDefaultRecommendationCount(preferredWorkload: PreferredWorkload): number {
   if (preferredWorkload === "Light") {
     return 3;
   }
 
-  if (preferredWorkload === "Intensive") {
-    return 4;
+  if (preferredWorkload === "Heavy") {
+    return 5;
   }
 
   return 4;
@@ -371,7 +384,7 @@ export function estimateWorkload(
   const workloadScore = Number(
     (totalCourses * 1.2 + averageDifficulty * 0.9 + averageMathIntensity * 0.7).toFixed(1)
   );
-  const label = workloadScore >= 9 ? "Heavy" : workloadScore >= 6 ? "Balanced" : "Light";
+  const label = workloadScore >= 9 ? "Heavy" : workloadScore >= 6 ? "Medium" : "Light";
 
   return {
     preferredWorkload,
