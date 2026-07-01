@@ -9,6 +9,7 @@ import {
   subscribe,
   updateProfile
 } from "@/lib/profileStore";
+import { calculateAcademicProgress } from "@/lib/academicProgress";
 
 const ProfileContext = createContext(null);
 
@@ -23,15 +24,17 @@ export function ProfileProvider({ children }) {
     });
   }, []);
 
-  const value = useMemo(
-    () => ({
+  const value = useMemo(() => {
+    const academicProgress = calculateAcademicProgress(profile);
+
+    return {
       profile,
+      academicProgress,
       resetProfile,
       saveProfile,
       updateProfile
-    }),
-    [profile]
-  );
+    };
+  }, [profile]);
 
   return <ProfileContext.Provider value={value}>{children}</ProfileContext.Provider>;
 }

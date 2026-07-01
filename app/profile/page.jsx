@@ -13,6 +13,7 @@ import {
 } from "lucide-react";
 import { uqBachelorOfEconomicsCourses } from "@/data/courses";
 import { useProfile } from "@/components/ProfileProvider";
+import { calculateAcademicProgress } from "@/lib/academicProgress";
 
 const panelClass = "rounded-lg border border-[#e5e5ea] bg-white shadow-[0_1px_2px_rgba(0,0,0,0.04)]";
 const softPanelClass = "rounded-lg border border-[#e5e5ea] bg-[#fbfbfd]";
@@ -29,13 +30,17 @@ const graduationSemesterOptions = [
 ];
 
 export default function AcademicProfilePage() {
-  const { profile, saveProfile } = useProfile();
+  const { profile, academicProgress, saveProfile } = useProfile();
   const [draftProfile, setDraftProfile] = useState(profile);
   const [savedMessage, setSavedMessage] = useState("");
 
   const completedCourseSet = useMemo(
     () => new Set(draftProfile.completedCourses),
     [draftProfile.completedCourses]
+  );
+  const draftProgress = useMemo(
+    () => calculateAcademicProgress(draftProfile),
+    [draftProfile]
   );
 
   useEffect(() => {
@@ -91,11 +96,11 @@ export default function AcademicProfilePage() {
           <div className={`${panelClass} p-5`}>
             <p className="text-sm font-medium text-[#6e6e73]">Profile Status</p>
             <p className="mt-2 text-3xl font-semibold tracking-normal text-[#1d1d1f]">
-              {profile.completedCourses.length} courses
+              {academicProgress.completedCourseCount} / {academicProgress.totalCourseCount} courses
             </p>
             <p className="mt-4 border-t border-[#e5e5ea] pt-4 text-sm leading-6 text-[#6e6e73]">
               Current GPA {profile.currentGpa || "-"} · Target GPA {profile.targetGpa || "-"} ·{" "}
-              {profile.preferredWorkload} workload
+              {academicProgress.remainingCourseCount} courses remaining
             </p>
           </div>
         </div>
@@ -218,7 +223,8 @@ export default function AcademicProfilePage() {
               <div>
                 <p className="text-sm font-medium text-[#6e6e73]">Completed Courses</p>
                 <p className="mt-1 text-sm text-[#86868b]">
-                  已完成 {draftProfile.completedCourses.length} 门课程
+                  已完成 {draftProgress.completedCourseCount} / {draftProgress.totalCourseCount} 门课程 · 剩余{" "}
+                  {draftProgress.remainingCourseCount} 门
                 </p>
               </div>
               <button

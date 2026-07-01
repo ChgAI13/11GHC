@@ -181,7 +181,7 @@ function QuickAction({ action, comingSoon }) {
 
 export default function DashboardPage() {
   const { language } = useLanguage();
-  const { profile } = useProfile();
+  const { profile, academicProgress } = useProfile();
   const t = copy[language];
   const graduationResult = useMemo(
     () =>
@@ -203,11 +203,8 @@ export default function DashboardPage() {
       }),
     [profile]
   );
-  const completedCourseCount = profile.completedCourses.length;
-  const remainingCourseCount = Math.max(
-    uqBachelorOfEconomicsCourses.length - completedCourseCount,
-    0
-  );
+  const completedCourseCount = academicProgress.completedCourseCount;
+  const remainingCourseCount = academicProgress.remainingCourseCount;
   const degreePercent = graduationResult.overallProgress;
   const strokeOffset =
     progressCircle.circumference -
@@ -225,15 +222,15 @@ export default function DashboardPage() {
       value: String(completedCourseCount),
       helper:
         language === "zh"
-          ? `${graduationResult.totalCompletedUnits} units 已完成`
-          : `${graduationResult.totalCompletedUnits} units completed`
+          ? `${academicProgress.completedUnits} units 已完成`
+          : `${academicProgress.completedUnits} units completed`
     },
     {
       value: String(remainingCourseCount),
       helper:
         language === "zh"
-          ? `${graduationResult.missingUnits} units 待完成`
-          : `${graduationResult.missingUnits} units remaining`
+          ? `${academicProgress.remainingUnits} units 待完成`
+          : `${academicProgress.remainingUnits} units remaining`
     }
   ];
   const dashboardStats = t.stats.map((item, index) => ({
@@ -263,14 +260,14 @@ export default function DashboardPage() {
           topRecommendation
             ? `下学期优先考虑 ${topRecommendation}，它最符合当前 Profile 和毕业进度。`
             : "先到 Academic Profile 填写 Current GPA 和已完成课程。",
-          `你还需要 ${graduationResult.missingUnits} units 才能达到当前 Mock Degree Rules。`,
+          `你还需要 ${academicProgress.remainingUnits} units 才能达到当前 Mock Degree Rules。`,
           `当前偏好的学习负荷是 ${profile.preferredWorkload}，Course Planner 会按这个节奏推荐课程。`
         ]
       : [
           topRecommendation
             ? `Prioritise ${topRecommendation} next semester based on your Profile and degree progress.`
             : "Complete your Current GPA and completed courses in Academic Profile first.",
-          `You still need ${graduationResult.missingUnits} units under the current mock degree rules.`,
+          `You still need ${academicProgress.remainingUnits} units under the current mock degree rules.`,
           `Your preferred workload is ${profile.preferredWorkload}, and Course Planner will use that pace.`
         ];
   const degreeCompletedText =
