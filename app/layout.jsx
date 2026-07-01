@@ -1,6 +1,7 @@
 import "./globals.css";
 import { AppShell } from "@/components/AppShell";
 import { LanguageProvider } from "@/components/LanguageProvider";
+import { ProfileProvider } from "@/components/ProfileProvider";
 
 export const metadata = {
   title: "UQ Academic Planner",
@@ -12,7 +13,9 @@ export default function RootLayout({ children }) {
     <html lang="zh-CN">
       <body>
         <LanguageProvider>
-          <AppShell>{children}</AppShell>
+          <ProfileProvider>
+            <AppShell>{children}</AppShell>
+          </ProfileProvider>
         </LanguageProvider>
       </body>
     </html>

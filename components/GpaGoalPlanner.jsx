@@ -1,6 +1,7 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import Link from "next/link";
+import { useMemo } from "react";
 import {
   AlertTriangle,
   BookOpenCheck,
@@ -10,14 +11,8 @@ import {
   Target,
   TrendingUp
 } from "lucide-react";
-import { load, save } from "@/lib/storage";
-
-const DEFAULT_GPA_FORM = {
-  currentGpa: "5.80",
-  completedCount: "16",
-  remainingCount: "8",
-  targetGpa: "6.20"
-};
+import { useProfile } from "@/components/ProfileProvider";
+import { uqBachelorOfEconomicsCourses } from "@/data/courses";
 
 const panelClass = "rounded-lg border border-[#e5e5ea] bg-white shadow-[0_1px_2px_rgba(0,0,0,0.04)]";
 const softPanelClass = "rounded-lg border border-[#e5e5ea] bg-[#fbfbfd]";
@@ -142,66 +137,26 @@ function getAdvice(requiredGpa, targetGpa, currentGpa) {
   };
 }
 
-function Field({ label, value, onChange, placeholder, step = "0.01", max = "7" }) {
+function ProfileField({ label, value, helper }) {
   return (
-    <label className="block">
-      <span className="text-sm font-medium text-[#6e6e73]">{label}</span>
-      <input
-        className="mt-2 h-14 rounded-lg border border-[#e5e5ea] bg-white px-4 text-lg font-semibold text-[#1d1d1f] outline-none transition placeholder:text-[#c7c7cc] focus:border-[#51247a] focus:ring-4 focus:ring-[#51247a]/10"
-        type="number"
-        min="0"
-        max={max}
-        step={step}
-        inputMode={step === "1" ? "numeric" : "decimal"}
-        value={value}
-        onChange={(event) => onChange(event.target.value)}
-        placeholder={placeholder}
-      />
-    </label>
+    <div className="block">
+      <p className="text-sm font-medium text-[#6e6e73]">{label}</p>
+      <div className="mt-2 min-h-14 rounded-lg border border-[#e5e5ea] bg-[#fbfbfd] px-4 py-3">
+        <p className="text-lg font-semibold text-[#1d1d1f]">{value}</p>
+        {helper ? <p className="mt-1 text-xs font-medium text-[#86868b]">{helper}</p> : null}
+      </div>
+    </div>
   );
 }
 
 export function GpaGoalPlanner() {
-  const [currentGpa, setCurrentGpa] = useState(DEFAULT_GPA_FORM.currentGpa);
-  const [completedCount, setCompletedCount] = useState(DEFAULT_GPA_FORM.completedCount);
-  const [remainingCount, setRemainingCount] = useState(DEFAULT_GPA_FORM.remainingCount);
-  const [targetGpa, setTargetGpa] = useState(DEFAULT_GPA_FORM.targetGpa);
-  const [hasLoadedSavedValues, setHasLoadedSavedValues] = useState(false);
-
-  useEffect(() => {
-    const savedValues = load("gpaPlanner", DEFAULT_GPA_FORM);
-
-    if (typeof savedValues.currentGpa === "string") {
-      setCurrentGpa(savedValues.currentGpa);
-    }
-
-    if (typeof savedValues.completedCount === "string") {
-      setCompletedCount(savedValues.completedCount);
-    }
-
-    if (typeof savedValues.remainingCount === "string") {
-      setRemainingCount(savedValues.remainingCount);
-    }
-
-    if (typeof savedValues.targetGpa === "string") {
-      setTargetGpa(savedValues.targetGpa);
-    }
-
-    setHasLoadedSavedValues(true);
-  }, []);
-
-  useEffect(() => {
-    if (!hasLoadedSavedValues) {
-      return;
-    }
-
-    save("gpaPlanner", {
-      currentGpa,
-      completedCount,
-      remainingCount,
-      targetGpa
-    });
-  }, [currentGpa, completedCount, remainingCount, targetGpa, hasLoadedSavedValues]);
+  const { profile } = useProfile();
+  const currentGpa = profile.currentGpa;
+  const targetGpa = profile.targetGpa;
+  const completedCount = String(profile.completedCourses.length);
+  const remainingCount = String(
+    Math.max(uqBachelorOfEconomicsCourses.length - profile.completedCourses.length, 0)
+  );
 
   const result = useMemo(() => {
     const current = clampNumber(currentGpa, 0, 7);
@@ -232,12 +187,16 @@ export function GpaGoalPlanner() {
 
   const isImpossible = result.required > 7;
   const isAlreadySafe = result.required <= 0 && result.remaining > 0;
-  const requiredDisplay = result.remaining === 0 ? "未填写" : formatGpa(result.required);
-  const statusText = isImpossible
-    ? "按当前课程数量，目标超过 7 分制上限。"
-    : isAlreadySafe
-      ? "你已经高于目标轨道，后续重点是稳住。"
-      : `剩余 ${result.remaining} 门课平均需要达到 ${requiredDisplay}。`;
+  const hasProfileGpa = currentGpa.trim() !== "" && targetGpa.trim() !== "";
+  const requiredDisplay =
+    !hasProfileGpa || result.remaining === 0 ? "未填写" : formatGpa(result.required);
+  const statusText = !hasProfileGpa
+    ? "请先到 Academic Profile 填写 Current GPA 和 Target GPA。"
+    : isImpossible
+      ? "按当前课程数量，目标超过 7 分制上限。"
+      : isAlreadySafe
+        ? "你已经高于目标轨道，后续重点是稳住。"
+        : `剩余 ${result.remaining} 门课平均需要达到 ${requiredDisplay}。`;
 
   return (
     <div className="grid gap-7">
@@ -252,7 +211,7 @@ export function GpaGoalPlanner() {
               GPA 目标规划器
             </h1>
             <p className="mt-4 max-w-2xl text-base leading-7 text-[#6e6e73] sm:text-lg">
-              输入当前 GPA、已完成课程和目标 GPA，估算剩余课程平均需要达到多少分。
+              自动读取 Academic Profile，估算剩余课程平均需要达到多少 GPA。
             </p>
           </div>
 
@@ -281,44 +240,43 @@ export function GpaGoalPlanner() {
             </span>
             <div>
               <h2 className="text-2xl font-semibold tracking-normal text-[#1d1d1f]">
-                填写你的成绩情况
+                Academic Profile 数据
               </h2>
               <p className="mt-1 text-sm text-[#6e6e73]">
-                按澳洲常见 7 分制估算，输入会自动保存在当前浏览器。
+                GPA Planner 不再单独保存数据。请在 Academic Profile 修改 GPA 和课程进度。
               </p>
             </div>
           </div>
 
           <div className="mt-6 grid gap-4 sm:grid-cols-2">
-            <Field
+            <ProfileField
               label="当前 GPA"
-              value={currentGpa}
-              onChange={setCurrentGpa}
-              placeholder="例如 5.80"
+              value={currentGpa || "-"}
+              helper="来自 Academic Profile"
             />
-            <Field
+            <ProfileField
               label="目标毕业 GPA"
-              value={targetGpa}
-              onChange={setTargetGpa}
-              placeholder="例如 6.20"
+              value={targetGpa || "-"}
+              helper="来自 Academic Profile"
             />
-            <Field
+            <ProfileField
               label="已完成课程数"
               value={completedCount}
-              onChange={setCompletedCount}
-              placeholder="例如 16"
-              step="1"
-              max="99"
+              helper="来自 Completed Courses"
             />
-            <Field
+            <ProfileField
               label="剩余课程数"
               value={remainingCount}
-              onChange={setRemainingCount}
-              placeholder="例如 8"
-              step="1"
-              max="99"
+              helper="根据 Mock Course Database 计算"
             />
           </div>
+
+          <Link
+            href="/profile"
+            className="mt-6 inline-flex min-h-12 items-center justify-center rounded-lg border border-[#e5e5ea] bg-white px-4 text-sm font-semibold text-[#1d1d1f] transition hover:bg-[#f5f5f7]"
+          >
+            去 Academic Profile 修改数据
+          </Link>
         </section>
 
         <aside className="grid gap-4 lg:sticky lg:top-24">

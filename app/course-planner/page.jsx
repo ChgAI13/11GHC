@@ -17,17 +17,10 @@ import {
   recommendCourses,
   uqBachelorOfEconomicsProgram
 } from "@/lib/recommendationEngine";
-import {
-  DEFAULT_ACADEMIC_PROFILE,
-  loadProfile
-} from "@/lib/profile";
-import { load, save } from "@/lib/storage";
+import { useProfile } from "@/components/ProfileProvider";
 
 const panelClass = "rounded-lg border border-[#e5e5ea] bg-white shadow-[0_1px_2px_rgba(0,0,0,0.04)]";
 const softPanelClass = "rounded-lg border border-[#e5e5ea] bg-[#fbfbfd]";
-const DEFAULT_COURSE_PLANNER_STATE = {
-  hasGeneratedPlan: false
-};
 
 function formatCourseMeta(course) {
   return `Level ${course.level} · ${course.units} units · ${course.category}`;
@@ -53,11 +46,8 @@ function getProfileIssues(profile) {
 }
 
 export default function CoursePlannerPage() {
-  const [profile, setProfile] = useState(DEFAULT_ACADEMIC_PROFILE);
-  const [hasGeneratedPlan, setHasGeneratedPlan] = useState(
-    DEFAULT_COURSE_PLANNER_STATE.hasGeneratedPlan
-  );
-  const [hasLoadedSavedValues, setHasLoadedSavedValues] = useState(false);
+  const { profile } = useProfile();
+  const [hasGeneratedPlan, setHasGeneratedPlan] = useState(false);
   const [result, setResult] = useState(null);
   const [formError, setFormError] = useState("");
 
@@ -70,29 +60,7 @@ export default function CoursePlannerPage() {
   }, [profile.completedCourses]);
 
   useEffect(() => {
-    setProfile(loadProfile());
-
-    const savedValues = load("coursePlanner", DEFAULT_COURSE_PLANNER_STATE);
-
-    if (typeof savedValues.hasGeneratedPlan === "boolean") {
-      setHasGeneratedPlan(savedValues.hasGeneratedPlan);
-    }
-
-    setHasLoadedSavedValues(true);
-  }, []);
-
-  useEffect(() => {
-    if (!hasLoadedSavedValues) {
-      return;
-    }
-
-    save("coursePlanner", {
-      hasGeneratedPlan
-    });
-  }, [hasGeneratedPlan, hasLoadedSavedValues]);
-
-  useEffect(() => {
-    if (!hasLoadedSavedValues || !hasGeneratedPlan) {
+    if (!hasGeneratedPlan) {
       return;
     }
 
@@ -114,7 +82,7 @@ export default function CoursePlannerPage() {
       })
     );
     setFormError("");
-  }, [profile, hasGeneratedPlan, hasLoadedSavedValues]);
+  }, [profile, hasGeneratedPlan]);
 
   function generatePlan(event) {
     event.preventDefault();

@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useMemo } from "react";
 import Link from "next/link";
 import {
   AlertTriangle,
@@ -20,10 +20,7 @@ import {
   recommendCourses,
   uqBachelorOfEconomicsProgram
 } from "@/lib/recommendationEngine";
-import {
-  DEFAULT_ACADEMIC_PROFILE,
-  loadProfile
-} from "@/lib/profile";
+import { useProfile } from "@/components/ProfileProvider";
 
 const panelClass = "rounded-lg border border-[#e5e5ea] bg-white shadow-[0_1px_2px_rgba(0,0,0,0.04)]";
 const softPanelClass = "rounded-lg border border-[#e5e5ea] bg-[#fbfbfd]";
@@ -105,11 +102,7 @@ function RequirementPillList({ requirements, emptyText }) {
 }
 
 export default function GraduationCheckerPage() {
-  const [profile, setProfile] = useState(DEFAULT_ACADEMIC_PROFILE);
-
-  useEffect(() => {
-    setProfile(loadProfile());
-  }, []);
+  const { profile } = useProfile();
 
   const graduationResult = useMemo(
     () =>

@@ -12,11 +12,7 @@ import {
   SlidersHorizontal
 } from "lucide-react";
 import { uqBachelorOfEconomicsCourses } from "@/data/courses";
-import {
-  DEFAULT_ACADEMIC_PROFILE,
-  loadProfile,
-  saveProfile
-} from "@/lib/profile";
+import { useProfile } from "@/components/ProfileProvider";
 
 const panelClass = "rounded-lg border border-[#e5e5ea] bg-white shadow-[0_1px_2px_rgba(0,0,0,0.04)]";
 const softPanelClass = "rounded-lg border border-[#e5e5ea] bg-[#fbfbfd]";
@@ -33,21 +29,22 @@ const graduationSemesterOptions = [
 ];
 
 export default function AcademicProfilePage() {
-  const [profile, setProfile] = useState(DEFAULT_ACADEMIC_PROFILE);
+  const { profile, saveProfile } = useProfile();
+  const [draftProfile, setDraftProfile] = useState(profile);
   const [savedMessage, setSavedMessage] = useState("");
 
   const completedCourseSet = useMemo(
-    () => new Set(profile.completedCourses),
-    [profile.completedCourses]
+    () => new Set(draftProfile.completedCourses),
+    [draftProfile.completedCourses]
   );
 
   useEffect(() => {
-    setProfile(loadProfile());
-  }, []);
+    setDraftProfile(profile);
+  }, [profile]);
 
   function updateField(field, value) {
     setSavedMessage("");
-    setProfile((currentProfile) => ({
+    setDraftProfile((currentProfile) => ({
       ...currentProfile,
       [field]: value
     }));
@@ -55,7 +52,7 @@ export default function AcademicProfilePage() {
 
   function toggleCompletedCourse(courseCode) {
     setSavedMessage("");
-    setProfile((currentProfile) => {
+    setDraftProfile((currentProfile) => {
       const isCompleted = currentProfile.completedCourses.includes(courseCode);
 
       return {
@@ -69,9 +66,9 @@ export default function AcademicProfilePage() {
 
   function handleSave(event) {
     event.preventDefault();
-    const savedProfile = saveProfile(profile);
-    setProfile(savedProfile);
-    setSavedMessage("Academic Profile 已保存，Course Planner 会自动读取这些数据。");
+    const savedProfile = saveProfile(draftProfile);
+    setDraftProfile(savedProfile);
+    setSavedMessage("Academic Profile 已保存，Dashboard、GPA、Course Planner 和 Graduation Checker 已同步更新。");
   }
 
   return (
@@ -126,7 +123,7 @@ export default function AcademicProfilePage() {
               <input
                 className={`${inputClass} bg-[#fbfbfd]`}
                 type="text"
-                value={profile.university}
+                value={draftProfile.university}
                 readOnly
               />
             </label>
@@ -136,7 +133,7 @@ export default function AcademicProfilePage() {
               <input
                 className={`${inputClass} bg-[#fbfbfd]`}
                 type="text"
-                value={profile.program}
+                value={draftProfile.program}
                 readOnly
               />
             </label>
@@ -153,7 +150,7 @@ export default function AcademicProfilePage() {
                 step="0.01"
                 inputMode="decimal"
                 placeholder="例如 5.60"
-                value={profile.currentGpa}
+                value={draftProfile.currentGpa}
                 onChange={(event) => updateField("currentGpa", event.target.value)}
               />
             </label>
@@ -168,7 +165,7 @@ export default function AcademicProfilePage() {
                 step="0.01"
                 inputMode="decimal"
                 placeholder="例如 6.20"
-                value={profile.targetGpa}
+                value={draftProfile.targetGpa}
                 onChange={(event) => updateField("targetGpa", event.target.value)}
               />
             </label>
@@ -181,7 +178,7 @@ export default function AcademicProfilePage() {
               </span>
               <select
                 className={inputClass}
-                value={profile.expectedGraduationSemester}
+                value={draftProfile.expectedGraduationSemester}
                 onChange={(event) =>
                   updateField("expectedGraduationSemester", event.target.value)
                 }
@@ -203,7 +200,7 @@ export default function AcademicProfilePage() {
                     key={option}
                     type="button"
                     className={`rounded-md text-sm font-semibold transition ${
-                      profile.preferredWorkload === option
+                      draftProfile.preferredWorkload === option
                         ? "bg-white text-[#1d1d1f] shadow-[0_1px_2px_rgba(0,0,0,0.06)]"
                         : "text-[#86868b] hover:text-[#1d1d1f]"
                     }`}
@@ -221,7 +218,7 @@ export default function AcademicProfilePage() {
               <div>
                 <p className="text-sm font-medium text-[#6e6e73]">Completed Courses</p>
                 <p className="mt-1 text-sm text-[#86868b]">
-                  已完成 {profile.completedCourses.length} 门课程
+                  已完成 {draftProfile.completedCourses.length} 门课程
                 </p>
               </div>
               <button

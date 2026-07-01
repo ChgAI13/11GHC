@@ -1,5 +1,6 @@
 "use client";
 
+import { useMemo } from "react";
 import {
   BookOpen,
   CalendarCheck,
@@ -13,11 +14,18 @@ import {
 } from "lucide-react";
 import Link from "next/link";
 import { useLanguage } from "@/components/LanguageProvider";
+import { useProfile } from "@/components/ProfileProvider";
+import { uqBachelorOfEconomicsCourses } from "@/data/courses";
+import { uqBachelorOfEconomicsGraduationRules } from "@/data/graduationRules";
+import { checkGraduation } from "@/lib/graduationChecker";
+import {
+  recommendCourses,
+  uqBachelorOfEconomicsProgram
+} from "@/lib/recommendationEngine";
 
 const progressCircle = {
   radius: 54,
-  circumference: 339.292,
-  percent: 67
+  circumference: 339.292
 };
 
 const copy = {
@@ -65,8 +73,8 @@ const copy = {
       comingSoon: "暂未开放",
       items: [
         { label: "打开 GPA Planner", href: "/gpa", available: true },
-        { label: "打开 Course Planner", href: "#", available: false },
-        { label: "打开 Graduation Checker", href: "#", available: false }
+        { label: "打开 Course Planner", href: "/course-planner", available: true },
+        { label: "打开 Graduation Checker", href: "/graduation", available: true }
       ]
     }
   },
@@ -115,8 +123,8 @@ const copy = {
       comingSoon: "Coming soon",
       items: [
         { label: "Open GPA Planner", href: "/gpa", available: true },
-        { label: "Open Course Planner", href: "#", available: false },
-        { label: "Open Graduation Checker", href: "#", available: false }
+        { label: "Open Course Planner", href: "/course-planner", available: true },
+        { label: "Open Graduation Checker", href: "/graduation", available: true }
       ]
     }
   }
@@ -173,10 +181,106 @@ function QuickAction({ action, comingSoon }) {
 
 export default function DashboardPage() {
   const { language } = useLanguage();
+  const { profile } = useProfile();
   const t = copy[language];
+  const graduationResult = useMemo(
+    () =>
+      checkGraduation(
+        profile,
+        uqBachelorOfEconomicsCourses,
+        uqBachelorOfEconomicsGraduationRules
+      ),
+    [profile]
+  );
+  const recommendationResult = useMemo(
+    () =>
+      recommendCourses({
+        program: uqBachelorOfEconomicsProgram,
+        currentGpa: Number(profile.currentGpa) || 0,
+        completedCourses: profile.completedCourses,
+        targetGpa: Number(profile.targetGpa) || Number(profile.currentGpa) || 0,
+        preferredWorkload: profile.preferredWorkload
+      }),
+    [profile]
+  );
+  const completedCourseCount = profile.completedCourses.length;
+  const remainingCourseCount = Math.max(
+    uqBachelorOfEconomicsCourses.length - completedCourseCount,
+    0
+  );
+  const degreePercent = graduationResult.overallProgress;
   const strokeOffset =
     progressCircle.circumference -
-    (progressCircle.percent / 100) * progressCircle.circumference;
+    (degreePercent / 100) * progressCircle.circumference;
+  const statValues = [
+    {
+      value: profile.currentGpa || "-",
+      helper: language === "zh" ? "来自 Academic Profile" : "From Academic Profile"
+    },
+    {
+      value: profile.targetGpa || "-",
+      helper: language === "zh" ? "来自 Academic Profile" : "From Academic Profile"
+    },
+    {
+      value: String(completedCourseCount),
+      helper:
+        language === "zh"
+          ? `${graduationResult.totalCompletedUnits} units 已完成`
+          : `${graduationResult.totalCompletedUnits} units completed`
+    },
+    {
+      value: String(remainingCourseCount),
+      helper:
+        language === "zh"
+          ? `${graduationResult.missingUnits} units 待完成`
+          : `${graduationResult.missingUnits} units remaining`
+    }
+  ];
+  const dashboardStats = t.stats.map((item, index) => ({
+    ...item,
+    ...statValues[index]
+  }));
+  const progressRequirementKeys = ["core-courses", "electives", "level-3"];
+  const dashboardProgressItems = t.progressItems.map((item, index) => {
+    const requirement = graduationResult.requirementStatuses.find(
+      (status) => status.key === progressRequirementKeys[index]
+    );
+
+    if (!requirement) {
+      return item;
+    }
+
+    return {
+      ...item,
+      value: `${requirement.completedUnits} / ${requirement.requiredUnits} units`,
+      width: `${requirement.progress}%`
+    };
+  });
+  const topRecommendation = recommendationResult.recommendedCourses[0]?.course.code;
+  const dashboardActions =
+    language === "zh"
+      ? [
+          topRecommendation
+            ? `下学期优先考虑 ${topRecommendation}，它最符合当前 Profile 和毕业进度。`
+            : "先到 Academic Profile 填写 Current GPA 和已完成课程。",
+          `你还需要 ${graduationResult.missingUnits} units 才能达到当前 Mock Degree Rules。`,
+          `当前偏好的学习负荷是 ${profile.preferredWorkload}，Course Planner 会按这个节奏推荐课程。`
+        ]
+      : [
+          topRecommendation
+            ? `Prioritise ${topRecommendation} next semester based on your Profile and degree progress.`
+            : "Complete your Current GPA and completed courses in Academic Profile first.",
+          `You still need ${graduationResult.missingUnits} units under the current mock degree rules.`,
+          `Your preferred workload is ${profile.preferredWorkload}, and Course Planner will use that pace.`
+        ];
+  const degreeCompletedText =
+    language === "zh"
+      ? `${completedCourseCount} 门已完成`
+      : `${completedCourseCount} courses completed`;
+  const degreeRemainingText =
+    language === "zh"
+      ? `${remainingCourseCount} 门剩余`
+      : `${remainingCourseCount} courses remaining`;
 
   return (
     <div className="grid gap-7 xl:grid-cols-[minmax(0,1fr)_340px]">
@@ -186,7 +290,7 @@ export default function DashboardPage() {
             <div>
               <div className="inline-flex items-center gap-2 rounded-full border border-[#e5e5ea] bg-white px-3 py-1.5 text-sm font-medium text-[#6e6e73]">
                 <GraduationCap className="h-4 w-4 text-[#51247a]" aria-hidden="true" />
-                {t.university}
+                {profile.university}
               </div>
               <h1 className="mt-6 max-w-3xl text-4xl font-semibold leading-tight tracking-normal text-[#1d1d1f] sm:text-6xl">
                 {t.title}
@@ -199,7 +303,7 @@ export default function DashboardPage() {
             <div className={`${panelClass} p-5`}>
               <p className="text-sm font-medium text-[#6e6e73]">{t.programLabel}</p>
               <p className="mt-2 text-2xl font-semibold tracking-normal text-[#1d1d1f]">
-                {t.program}
+                {profile.program}
               </p>
               <div className="mt-5 flex items-center justify-between gap-3 border-t border-[#e5e5ea] pt-4">
                 <span className="text-sm font-medium text-[#86868b]">{t.cohort}</span>
@@ -212,7 +316,7 @@ export default function DashboardPage() {
         </section>
 
         <section className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-          {t.stats.map((item) => (
+          {dashboardStats.map((item) => (
             <StatCard key={item.label} item={item} />
           ))}
         </section>
@@ -229,16 +333,16 @@ export default function DashboardPage() {
               </p>
             </div>
             <p className="text-5xl font-semibold tracking-normal text-[#51247a]">
-              {t.academicProgress.percent}
+              {degreePercent}%
             </p>
           </div>
 
           <div className="mt-6 h-2.5 overflow-hidden rounded-full bg-[#f5f5f7]">
-            <div className="h-full w-[45%] rounded-full bg-[#51247a]" />
+            <div className="h-full rounded-full bg-[#51247a]" style={{ width: `${degreePercent}%` }} />
           </div>
 
           <div className="mt-5 grid gap-3 md:grid-cols-3">
-            {t.progressItems.map((item) => (
+            {dashboardProgressItems.map((item) => (
               <div key={item.label} className={`${softPanelClass} p-4`}>
                 <div className="flex items-center justify-between gap-3">
                   <p className="text-sm font-semibold text-[#1d1d1f]">{item.label}</p>
@@ -266,7 +370,7 @@ export default function DashboardPage() {
           </div>
 
           <div className="mt-6 grid gap-3">
-            {t.actions.map((action) => (
+            {dashboardActions.map((action) => (
               <div key={action} className={`${softPanelClass} p-4`}>
                 <div className="flex items-start gap-3">
                   <span className="mt-1 grid h-8 w-8 shrink-0 place-items-center rounded-lg bg-white text-[#51247a]">
@@ -336,7 +440,7 @@ export default function DashboardPage() {
               <div className="absolute inset-0 grid place-items-center text-center">
                 <div>
                   <p className="text-4xl font-semibold tracking-normal text-[#1d1d1f]">
-                    {t.degreeProgress.percent}
+                    {degreePercent}%
                   </p>
                   <p className="mt-1 text-xs font-semibold text-[#86868b]">UQ BEcon</p>
                 </div>
@@ -346,10 +450,10 @@ export default function DashboardPage() {
 
           <div className="mt-6 grid gap-3">
             <div className={`${softPanelClass} p-4`}>
-              <p className="text-sm font-semibold text-[#1d1d1f]">{t.degreeProgress.completed}</p>
+              <p className="text-sm font-semibold text-[#1d1d1f]">{degreeCompletedText}</p>
             </div>
             <div className={`${softPanelClass} p-4`}>
-              <p className="text-sm font-semibold text-[#1d1d1f]">{t.degreeProgress.remaining}</p>
+              <p className="text-sm font-semibold text-[#1d1d1f]">{degreeRemainingText}</p>
             </div>
           </div>
         </section>
