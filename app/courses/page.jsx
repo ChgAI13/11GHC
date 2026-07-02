@@ -4,6 +4,7 @@ import { useMemo, useState } from "react";
 import {
   BookOpen,
   ChevronDown,
+  CheckCircle2,
   Database,
   Filter,
   Gauge,
@@ -13,6 +14,7 @@ import {
   Sigma
 } from "lucide-react";
 import { useLanguage } from "@/components/LanguageProvider";
+import { useProfile } from "@/components/ProfileProvider";
 import { uqEconomicsCourses } from "@/data/economicsCourses";
 import { getProgramRule } from "@/data/programRules";
 
@@ -57,6 +59,8 @@ const copy = {
       Elective: "Elective"
     },
     unknown: "unknown",
+    completed: "Profile 已完成",
+    profileCompleted: "Profile 已完成",
     expand: "展开详情",
     collapse: "收起详情"
   },
@@ -85,6 +89,8 @@ const copy = {
       Elective: "Elective"
     },
     unknown: "unknown",
+    completed: "Completed in Profile",
+    profileCompleted: "completed in Profile",
     expand: "Expand details",
     collapse: "Collapse details"
   }
@@ -169,7 +175,7 @@ function Metric({ icon: Icon, label, value }) {
   );
 }
 
-function CourseCard({ course, expanded, onToggle, t }) {
+function CourseCard({ course, expanded, isCompleted, onToggle, t }) {
   const programCategory = getProgramCategory(course.courseCode);
   const semesterText = formatList(course.semester, t.unknown);
   const prerequisitesText = formatList(course.prerequisites, t.unknown);
@@ -196,6 +202,12 @@ function CourseCard({ course, expanded, onToggle, t }) {
               <span className="rounded-full border border-[#e5e5ea] bg-white px-3 py-1 text-xs font-semibold text-[#6e6e73]">
                 Level {course.level}
               </span>
+              {isCompleted ? (
+                <span className="inline-flex items-center gap-1 rounded-full border border-[#bbf7d0] bg-[#f0fdf4] px-3 py-1 text-xs font-semibold text-[#166534]">
+                  <CheckCircle2 className="h-3.5 w-3.5" aria-hidden="true" />
+                  {t.completed}
+                </span>
+              ) : null}
             </div>
             <h2 className="mt-4 text-2xl font-semibold leading-tight tracking-normal text-[#1d1d1f]">
               {course.courseName}
@@ -278,12 +290,17 @@ function CourseCard({ course, expanded, onToggle, t }) {
 
 export default function CoursesPage() {
   const { language } = useLanguage();
+  const { profile } = useProfile();
   const t = copy[language];
   const [query, setQuery] = useState("");
   const [levelFilter, setLevelFilter] = useState("All");
   const [categoryFilter, setCategoryFilter] = useState("All");
   const [semesterFilter, setSemesterFilter] = useState("All");
   const [expandedCourseCode, setExpandedCourseCode] = useState("");
+  const completedCourseSet = useMemo(
+    () => new Set(profile.completedCourses),
+    [profile.completedCourses]
+  );
 
   const courses = useMemo(
     () =>
@@ -354,7 +371,7 @@ export default function CoursesPage() {
               {filteredCourses.length}
             </p>
             <p className="mt-4 border-t border-[#e5e5ea] pt-4 text-sm leading-6 text-[#6e6e73]">
-              {uqEconomicsCourses.length} total · {programRule.programName}
+              {uqEconomicsCourses.length} total · {completedCourseSet.size} {t.profileCompleted}
             </p>
           </div>
         </div>
@@ -417,6 +434,7 @@ export default function CoursesPage() {
               key={course.courseCode}
               course={course}
               expanded={expandedCourseCode === course.courseCode}
+              isCompleted={completedCourseSet.has(course.courseCode)}
               onToggle={() =>
                 setExpandedCourseCode((currentCourseCode) =>
                   currentCourseCode === course.courseCode ? "" : course.courseCode

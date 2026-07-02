@@ -37,3 +37,12 @@ test("updates profile from the existing store snapshot", () => {
   assert.equal(updatedProfile.currentGpa, "5.50");
   assert.equal(updatedProfile.targetGpa, "6.20");
 });
+
+test("keeps completed courses aligned with the latest course catalog", () => {
+  const savedProfile = saveProfile({
+    ...DEFAULT_ACADEMIC_PROFILE,
+    completedCourses: ["econ1010", "FAKE1000", " ECON1020 "]
+  });
+
+  assert.deepEqual(savedProfile.completedCourses, ["ECON1010", "ECON1020"]);
+});

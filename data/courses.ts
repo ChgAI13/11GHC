@@ -133,3 +133,15 @@ export const uqBachelorOfEconomicsCourses: Course[] = uqEconomicsCourses.map((co
   semester: toSemesterAvailability(course.semester),
   description: course.description
 }));
+
+export const uqBachelorOfEconomicsCourseByCode = new Map(
+  uqBachelorOfEconomicsCourses.map((course) => [course.code, course])
+);
+
+export function getBachelorOfEconomicsCourse(courseCode: string): Course | undefined {
+  return uqBachelorOfEconomicsCourseByCode.get(courseCode.trim().toUpperCase());
+}
+
+export function getBachelorOfEconomicsCourseCodes(): Set<string> {
+  return new Set(uqBachelorOfEconomicsCourseByCode.keys());
+}

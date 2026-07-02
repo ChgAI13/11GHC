@@ -1,3 +1,4 @@
+import { getBachelorOfEconomicsCourse, type Course } from "../data/courses.ts";
 import { getProgramRuleForProfile } from "../data/programRules.ts";
 import type { AcademicProfile } from "./profileStore.ts";
 
@@ -16,11 +17,14 @@ export function calculateAcademicProgress(
   profile: AcademicProfile
 ): AcademicProgressSummary {
   const totalUnits = getProgramRuleForProfile(profile).totalUnits;
-  const completedCourseCount = profile.completedCourses.length;
-  const completedUnits = completedCourseCount * STANDARD_COURSE_UNITS;
+  const completedCourses = profile.completedCourses
+    .map((courseCode) => getBachelorOfEconomicsCourse(courseCode))
+    .filter((course): course is Course => Boolean(course));
+  const completedCourseCount = completedCourses.length;
+  const completedUnits = completedCourses.reduce((total, course) => total + course.units, 0);
   const remainingUnits = Math.max(totalUnits - completedUnits, 0);
   const totalCourseCount = Math.ceil(totalUnits / STANDARD_COURSE_UNITS);
-  const remainingCourseCount = Math.max(totalCourseCount - completedCourseCount, 0);
+  const remainingCourseCount = Math.ceil(remainingUnits / STANDARD_COURSE_UNITS);
 
   return {
     totalUnits,

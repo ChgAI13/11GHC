@@ -1,3 +1,5 @@
+import { getBachelorOfEconomicsCourseCodes } from "../data/courses.ts";
+
 export type AcademicWorkload = "Light" | "Medium" | "Heavy";
 
 export interface AcademicProfile {
@@ -30,6 +32,7 @@ export const DEFAULT_ACADEMIC_PROFILE: AcademicProfile = {
 const STORAGE_KEY = "uq-academic-planner:persistence:v1";
 const VALID_WORKLOADS = new Set<AcademicWorkload>(["Light", "Medium", "Heavy"]);
 const subscribers = new Set<ProfileSubscriber>();
+const validCourseCodes = getBachelorOfEconomicsCourseCodes();
 
 let currentProfile = DEFAULT_ACADEMIC_PROFILE;
 let hasHydratedProfile = false;
@@ -70,7 +73,7 @@ function normalizeCourseCodes(courseCodes: unknown): string[] {
       courseCodes
         .filter((courseCode): courseCode is string => typeof courseCode === "string")
         .map((courseCode) => courseCode.trim().toUpperCase())
-        .filter(Boolean)
+        .filter((courseCode) => Boolean(courseCode) && validCourseCodes.has(courseCode))
     )
   ];
 }

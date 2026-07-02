@@ -50,7 +50,7 @@ const copy = {
     },
     progressItems: [
       { label: "经济学核心课", value: "10 / 12", width: "83%" },
-      { label: "经济学选修课", value: "4 / 8", width: "50%" },
+      { label: "Flexible Core", value: "4 / 8", width: "50%" },
       { label: "Level 3 课程要求", value: "6 / 18 units", width: "33%" }
     ],
     actionsSection: "Recommended Actions",
@@ -100,7 +100,7 @@ const copy = {
     },
     progressItems: [
       { label: "Economics core courses", value: "10 / 12", width: "83%" },
-      { label: "Economics electives", value: "4 / 8", width: "50%" },
+      { label: "Flexible core courses", value: "4 / 8", width: "50%" },
       { label: "Level 3 requirement", value: "6 / 18 units", width: "33%" }
     ],
     actionsSection: "Recommended Actions",
@@ -238,7 +238,7 @@ export default function DashboardPage() {
     ...item,
     ...statValues[index]
   }));
-  const progressRequirementKeys = ["core-courses", "electives", "level-3"];
+  const progressRequirementKeys = ["core-courses", "flexible-core", "level-3-minimum"];
   const dashboardProgressItems = t.progressItems.map((item, index) => {
     const requirement = graduationResult.requirementStatuses.find(
       (status) => status.key === progressRequirementKeys[index]
