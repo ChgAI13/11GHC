@@ -13,6 +13,7 @@ import {
 } from "lucide-react";
 import { useLanguage } from "@/components/LanguageProvider";
 import { useProfile } from "@/components/ProfileProvider";
+import { SITE_VERSION } from "@/lib/siteMeta";
 
 const navItems = [
   { href: "/", key: "dashboard", icon: LayoutDashboard, active: true },
@@ -22,6 +23,13 @@ const navItems = [
   { href: "/courses", key: "courseDatabase", icon: Database }
 ];
 
+const footerLinks = [
+  { href: "/about", label: "About" },
+  { href: "/privacy", label: "Privacy" },
+  { href: "/disclaimer", label: "Disclaimer" },
+  { href: "/terms", label: "Terms" }
+];
+
 const copy = {
   zh: {
     brand: "UQ Academic Planner",
@@ -29,6 +37,8 @@ const copy = {
     settings: "Profile",
     comingSoon: "暂未开放",
     resetAllData: "Reset All Data",
+    footerBuiltBy: "Built by a UQ Economics student.",
+    footerUnofficial: "Unofficial tool. Not affiliated with The University of Queensland.",
     resetConfirm:
       "确定要清空 Academic Profile 吗？Dashboard、GPA、Course Planner 和 Graduation Checker 会同步重置。",
     nav: {
@@ -45,6 +55,8 @@ const copy = {
     settings: "Profile",
     comingSoon: "Coming soon",
     resetAllData: "Reset All Data",
+    footerBuiltBy: "Built by a UQ Economics student.",
+    footerUnofficial: "Unofficial tool. Not affiliated with The University of Queensland.",
     resetConfirm:
       "Clear Academic Profile? Dashboard, GPA Planner, Course Planner, and Graduation Checker will reset together.",
     nav: {
@@ -161,6 +173,35 @@ function NavItem({ item, label, comingSoon, pathname, mobile = false }) {
   );
 }
 
+function AppFooter({ pathname, t }) {
+  const showHomeDisclaimer = pathname === "/";
+
+  return (
+    <footer className="mx-auto w-full max-w-7xl border-t border-[#e5e5ea] px-4 py-8 text-sm text-[#6e6e73] dark:border-[#2c2c2e] dark:text-[#c7c7cc] sm:px-6">
+      {showHomeDisclaimer ? (
+        <div className="mb-5 grid gap-1">
+          <p className="font-semibold text-[#1d1d1f] dark:text-white">{t.footerBuiltBy}</p>
+          <p>{t.footerUnofficial}</p>
+        </div>
+      ) : null}
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+        <nav className="flex flex-wrap gap-3" aria-label="Footer navigation">
+          {footerLinks.map((item) => (
+            <Link
+              key={item.href}
+              href={item.href}
+              className="font-semibold transition hover:text-[#1d1d1f] dark:hover:text-white"
+            >
+              {item.label}
+            </Link>
+          ))}
+        </nav>
+        <p className="font-semibold">Version {SITE_VERSION}</p>
+      </div>
+    </footer>
+  );
+}
+
 export function AppShell({ children }) {
   const pathname = usePathname();
   const { language } = useLanguage();
@@ -169,9 +210,9 @@ export function AppShell({ children }) {
   const navLabel = language === "zh" ? "主导航" : "Main navigation";
 
   return (
-    <div className="min-h-screen bg-white pb-24 text-[#1d1d1f] lg:pb-0">
+    <div className="min-h-screen bg-white pb-24 text-[#1d1d1f] dark:bg-[#0b0b0c] dark:text-white lg:pb-0">
       <div className="lg:grid lg:min-h-screen lg:grid-cols-[280px_1fr]">
-        <aside className="sticky top-0 hidden h-screen border-r border-[#e5e5ea] bg-white px-4 py-5 lg:flex lg:flex-col">
+        <aside className="sticky top-0 hidden h-screen border-r border-[#e5e5ea] bg-white px-4 py-5 dark:border-[#2c2c2e] dark:bg-[#111113] lg:flex lg:flex-col">
           <Link href="/" className="flex items-center gap-3 px-2" aria-label="Dashboard">
             <span className="grid h-10 w-10 place-items-center rounded-lg bg-[#51247a] text-sm font-black text-white shadow-[0_1px_2px_rgba(0,0,0,0.08)]">
               UQ
@@ -208,7 +249,7 @@ export function AppShell({ children }) {
           </div>
         </aside>
 
-        <div className="min-w-0">
+        <div className="flex min-w-0 flex-col">
           <header className="sticky top-0 z-20 border-b border-[#e5e5ea] bg-white/90 backdrop-blur-xl lg:hidden">
             <div className="flex items-center justify-between gap-4 px-4 py-3">
               <Link href="/" className="flex items-center gap-3" aria-label="Dashboard">
@@ -274,6 +315,8 @@ export function AppShell({ children }) {
           <main className="mx-auto w-full max-w-7xl px-4 py-6 sm:px-6 sm:py-8">
             {children}
           </main>
+
+          <AppFooter pathname={pathname} t={t} />
 
           <nav
             className="fixed inset-x-0 bottom-0 z-30 border-t border-[#e5e5ea] bg-white/95 px-2 pb-[max(env(safe-area-inset-bottom),0.5rem)] pt-2 shadow-[0_-8px_24px_rgba(0,0,0,0.04)] backdrop-blur-xl lg:hidden"
