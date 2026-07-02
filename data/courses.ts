@@ -24,6 +24,7 @@ export interface Course {
   examWeight: number;
   assignmentWeight: number;
   groupWork: boolean;
+  estimatedStudyHours: number;
   prerequisites: string[];
   semester: SemesterAvailability;
   description: string;
@@ -126,9 +127,10 @@ export const uqBachelorOfEconomicsCourses: Course[] = uqEconomicsCourses.map((co
   category: toCourseCategory(course.courseCode, course.category),
   difficulty: toRating(course.difficultyScore),
   mathIntensity: toRating(course.mathIntensity),
-  examWeight: course.examWeight ?? 0,
-  assignmentWeight: course.assignmentWeight ?? 0,
+  examWeight: course.examWeight ?? 50,
+  assignmentWeight: course.assignmentWeight ?? 50,
   groupWork: course.groupWork ?? false,
+  estimatedStudyHours: course.estimatedStudyHours ?? 10,
   prerequisites: toPrerequisites(course.prerequisites),
   semester: toSemesterAvailability(course.semester),
   description: course.description

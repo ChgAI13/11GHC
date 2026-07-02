@@ -23,6 +23,7 @@ import {
 import { getProgramRuleForProfile } from "@/data/programRules";
 import { checkGraduation } from "@/lib/graduationChecker";
 import {
+  analyzeSemester,
   recommendCourses,
   uqBachelorOfEconomicsProgram
 } from "@/lib/recommendationEngine";
@@ -35,6 +36,10 @@ const controlClass =
 
 function uniqueCourseCodes(courseCodes) {
   return [...new Set(courseCodes.map((courseCode) => courseCode.trim().toUpperCase()).filter(Boolean))];
+}
+
+function uniqueStrings(values) {
+  return [...new Set(values.filter(Boolean))];
 }
 
 function formatCourseMeta(course) {
@@ -75,6 +80,7 @@ function ProfileIssue({ profile }) {
 export default function CoursePlannerPage() {
   const { profile, updateProfile } = useProfile();
   const [selectedCourseBySemester, setSelectedCourseBySemester] = useState({});
+  const [activeSemesterId, setActiveSemesterId] = useState("semester-1");
   const semesterPlan = profile.semesterPlan;
   const completedCourseSet = useMemo(
     () => new Set(profile.completedCourses),
@@ -116,6 +122,28 @@ export default function CoursePlannerPage() {
       ),
     [completedCourseSet, plannedCourseSet]
   );
+  const activeSemester =
+    semesterPlan.find((semester) => semester.id === activeSemesterId) ?? semesterPlan[0];
+  const activeSemesterCourses = useMemo(
+    () =>
+      (activeSemester?.courses ?? [])
+        .map((courseCode) => getBachelorOfEconomicsCourse(courseCode))
+        .filter(Boolean),
+    [activeSemester]
+  );
+  const semesterAnalysis = useMemo(
+    () => analyzeSemester(activeSemesterCourses),
+    [activeSemesterCourses]
+  );
+  const simulatorWarnings = useMemo(
+    () =>
+      uniqueStrings([
+        ...semesterAnalysis.warnings,
+        ...graduationResult.prerequisiteWarnings,
+        ...recommendationResult.warnings
+      ]),
+    [graduationResult.prerequisiteWarnings, recommendationResult.warnings, semesterAnalysis.warnings]
+  );
 
   function saveSemesterPlan(nextSemesterPlan) {
     updateProfile({
@@ -138,6 +166,7 @@ export default function CoursePlannerPage() {
           : semester
       )
     );
+    setActiveSemesterId(semesterId);
     setSelectedCourseBySemester((current) => ({ ...current, [semesterId]: "" }));
   }
 
@@ -149,6 +178,7 @@ export default function CoursePlannerPage() {
           : semester
       )
     );
+    setActiveSemesterId(semesterId);
   }
 
   function moveCourse(semesterId, courseCode, direction) {
@@ -165,6 +195,7 @@ export default function CoursePlannerPage() {
     );
     nextPlan[nextIndex].courses = uniqueCourseCodes([...nextPlan[nextIndex].courses, courseCode]);
     saveSemesterPlan(nextPlan);
+    setActiveSemesterId(nextPlan[nextIndex].id);
   }
 
   function addRecommendedCourse(courseCode) {
@@ -200,6 +231,7 @@ export default function CoursePlannerPage() {
           : semester
       )
     );
+    setActiveSemesterId(targetSemesterId);
   }
 
   return (
@@ -291,7 +323,14 @@ export default function CoursePlannerPage() {
                 .filter(Boolean);
 
               return (
-                <article key={semester.id} className={`${softPanelClass} p-4`}>
+                <article
+                  key={semester.id}
+                  className={`rounded-lg border p-4 ${
+                    activeSemesterId === semester.id
+                      ? "border-[#51247a] bg-[#fbf8ff]"
+                      : "border-[#e5e5ea] bg-[#fbfbfd]"
+                  }`}
+                >
                   <div className="flex items-start justify-between gap-3">
                     <div>
                       <h3 className="text-lg font-semibold text-[#1d1d1f]">{semester.name}</h3>
@@ -303,6 +342,13 @@ export default function CoursePlannerPage() {
                       S{semesterIndex + 1}
                     </span>
                   </div>
+                  <button
+                    type="button"
+                    className="mt-3 inline-flex min-h-9 items-center justify-center rounded-lg border border-[#e5e5ea] bg-white px-3 text-xs font-semibold text-[#6e6e73] transition hover:bg-[#f5f5f7] hover:text-[#1d1d1f]"
+                    onClick={() => setActiveSemesterId(semester.id)}
+                  >
+                    Analyze Semester
+                  </button>
 
                   <div className="mt-4 grid gap-3">
                     {courses.length ? (
@@ -434,35 +480,114 @@ export default function CoursePlannerPage() {
           </section>
 
           <section className={`${panelClass} p-5`}>
-            <div className="flex items-center justify-between gap-3">
-              <div>
-                <p className="text-sm font-medium text-[#6e6e73]">Difficulty Score</p>
-                <p className="mt-1 text-3xl font-semibold text-[#1d1d1f]">
-                  {recommendationResult.difficultyScore || "-"}
+            <div className="flex items-start justify-between gap-3">
+              <div className="min-w-0">
+                <p className="text-sm font-medium text-[#6e6e73]">Semester Analysis</p>
+                <h2 className="mt-1 text-2xl font-semibold tracking-normal text-[#1d1d1f]">
+                  {activeSemester?.name ?? "Semester"}
+                </h2>
+              </div>
+              <Target className="h-6 w-6 shrink-0 text-[#51247a]" aria-hidden="true" />
+            </div>
+
+            <select
+              className={`${controlClass} mt-4 w-full`}
+              value={activeSemester?.id ?? ""}
+              onChange={(event) => setActiveSemesterId(event.target.value)}
+            >
+              {semesterPlan.map((semester) => (
+                <option key={semester.id} value={semester.id}>
+                  {semester.name}
+                </option>
+              ))}
+            </select>
+
+            <div className="mt-4 grid grid-cols-2 gap-3">
+              <div className={`${softPanelClass} p-4`}>
+                <p className="text-xs font-medium uppercase text-[#86868b]">Difficulty</p>
+                <p className="mt-2 text-2xl font-semibold text-[#1d1d1f]">
+                  {semesterAnalysis.difficultyScore || "-"}
                 </p>
               </div>
-              <Target className="h-6 w-6 text-[#51247a]" aria-hidden="true" />
-            </div>
-            <p className="mt-4 border-t border-[#e5e5ea] pt-4 text-sm leading-6 text-[#6e6e73]">
-              {recommendationResult.reason}
-            </p>
-          </section>
-
-          {recommendationResult.warnings.length ? (
-            <section className="rounded-lg border border-[#fed7aa] bg-[#fff7ed] p-5">
-              <div className="flex items-center gap-2 text-[#9a3412]">
-                <AlertTriangle className="h-5 w-5" aria-hidden="true" />
-                <p className="text-sm font-semibold">Warnings</p>
+              <div className={`${softPanelClass} p-4`}>
+                <p className="text-xs font-medium uppercase text-[#86868b]">Math Intensity</p>
+                <p className="mt-2 text-2xl font-semibold text-[#1d1d1f]">
+                  {semesterAnalysis.mathIntensity}
+                </p>
               </div>
-              <div className="mt-3 grid gap-2">
-                {recommendationResult.warnings.slice(0, 3).map((warning) => (
-                  <p key={warning} className="text-sm leading-6 text-[#9a3412]">
-                    {warning}
-                  </p>
+              <div className={`${softPanelClass} p-4`}>
+                <p className="text-xs font-medium uppercase text-[#86868b]">Exam Load</p>
+                <p className="mt-2 text-2xl font-semibold text-[#1d1d1f]">
+                  {semesterAnalysis.examLoad}%
+                </p>
+              </div>
+              <div className={`${softPanelClass} p-4`}>
+                <p className="text-xs font-medium uppercase text-[#86868b]">Assignment Load</p>
+                <p className="mt-2 text-2xl font-semibold text-[#1d1d1f]">
+                  {semesterAnalysis.assignmentLoad}%
+                </p>
+              </div>
+            </div>
+
+            <div className={`${softPanelClass} mt-3 p-4`}>
+              <p className="text-xs font-medium uppercase text-[#86868b]">
+                Estimated Study Hours
+              </p>
+              <p className="mt-2 text-2xl font-semibold text-[#1d1d1f]">
+                {semesterAnalysis.estimatedStudyHours} hrs / week
+              </p>
+              <p className="mt-1 text-sm leading-6 text-[#6e6e73]">
+                {semesterAnalysis.courseCount} courses · {semesterAnalysis.totalUnits} units
+              </p>
+            </div>
+
+            {semesterAnalysis.riskLabels.length ? (
+              <div className="mt-4 flex flex-wrap gap-2">
+                {semesterAnalysis.riskLabels.map((label) => (
+                  <span
+                    key={label}
+                    className="rounded-full border border-[#fed7aa] bg-[#fff7ed] px-3 py-1 text-xs font-semibold text-[#9a3412]"
+                  >
+                    {label}
+                  </span>
                 ))}
               </div>
-            </section>
-          ) : null}
+            ) : (
+              <p className="mt-4 rounded-lg border border-[#bbf7d0] bg-[#f0fdf4] p-3 text-sm font-medium leading-6 text-[#166534]">
+                No semester risk detected.
+              </p>
+            )}
+          </section>
+
+          <section className={`${panelClass} p-5`}>
+            <div className="flex items-center gap-2 text-[#1d1d1f]">
+              <AlertTriangle className="h-5 w-5 text-[#51247a]" aria-hidden="true" />
+              <p className="text-sm font-semibold">Warnings</p>
+            </div>
+            <div className="mt-4 grid gap-2">
+              {simulatorWarnings.length ? (
+                simulatorWarnings
+                  .slice(0, 5)
+                  .map((warning) => (
+                    <p
+                      key={warning}
+                      className="rounded-lg border border-[#fed7aa] bg-[#fff7ed] p-3 text-sm leading-6 text-[#9a3412]"
+                    >
+                      {warning}
+                    </p>
+                  ))
+              ) : (
+                <p className="text-sm leading-6 text-[#86868b]">
+                  Add, move, or remove courses to refresh simulator warnings.
+                </p>
+              )}
+            </div>
+          </section>
+
+          <section className={`${panelClass} p-5`}>
+            <p className="text-sm font-medium text-[#6e6e73]">Recommendation Engine</p>
+            <p className="mt-3 text-sm leading-6 text-[#6e6e73]">{recommendationResult.reason}</p>
+          </section>
         </aside>
       </div>
 

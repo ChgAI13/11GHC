@@ -2,6 +2,7 @@ import assert from "node:assert/strict";
 import test from "node:test";
 import type { Course } from "../data/courses.ts";
 import {
+  analyzeSemester,
   recommendCourses,
   type Program,
   uqBachelorOfEconomicsProgram
@@ -57,6 +58,7 @@ test("avoids difficulty 5 courses when GPA is below 5.5", () => {
     examWeight: 70,
     assignmentWeight: 30,
     groupWork: false,
+    estimatedStudyHours: 14,
     prerequisites: [],
     semester: "Both",
     description: "Mock difficult economics elective used for recommendation engine tests."
@@ -135,6 +137,7 @@ test("does not recommend more than two high math courses in the same semester", 
       examWeight: 60,
       assignmentWeight: 40,
       groupWork: false,
+      estimatedStudyHours: 12,
       prerequisites: [],
       semester: "Both",
       description: "Mock high math course A."
@@ -150,6 +153,7 @@ test("does not recommend more than two high math courses in the same semester", 
       examWeight: 60,
       assignmentWeight: 40,
       groupWork: false,
+      estimatedStudyHours: 12,
       prerequisites: [],
       semester: "Both",
       description: "Mock high math course B."
@@ -193,4 +197,48 @@ test("generates the requested medium workload semester plan scenario", () => {
   assert.ok(result.warnings.length > 0);
   assert.ok(result.estimatedSemesterWorkload.totalCourses > 0);
   assert.equal(result.estimatedSemesterWorkload.preferredWorkload, "Medium");
+});
+
+test("analyses semester risk from planned courses", () => {
+  const courses: Course[] = [
+    {
+      code: "ECON3901",
+      name: "Math Heavy Exam Course",
+      units: 2,
+      level: 3,
+      category: "Economics Elective",
+      difficulty: 5,
+      mathIntensity: 5,
+      examWeight: 80,
+      assignmentWeight: 20,
+      groupWork: false,
+      estimatedStudyHours: 14,
+      prerequisites: [],
+      semester: 1,
+      description: "Mock semester analysis course."
+    },
+    {
+      code: "ECON3902",
+      name: "Second Math Heavy Exam Course",
+      units: 2,
+      level: 3,
+      category: "Economics Elective",
+      difficulty: 4,
+      mathIntensity: 5,
+      examWeight: 75,
+      assignmentWeight: 25,
+      groupWork: false,
+      estimatedStudyHours: 12,
+      prerequisites: [],
+      semester: 1,
+      description: "Mock semester analysis course."
+    }
+  ];
+
+  const analysis = analyzeSemester(courses);
+
+  assert.equal(analysis.mathIntensity, 10);
+  assert.equal(analysis.estimatedStudyHours, 26);
+  assert.ok(analysis.riskLabels.includes("High Risk Semester"));
+  assert.ok(analysis.riskLabels.includes("Exam Heavy"));
 });

@@ -50,6 +50,19 @@ export interface RecommendationResult {
   reason: string;
 }
 
+export interface SemesterAnalysis {
+  courseCount: number;
+  totalUnits: number;
+  difficultyScore: number;
+  examLoad: number;
+  assignmentLoad: number;
+  mathIntensity: number;
+  averageMathIntensity: number;
+  estimatedStudyHours: number;
+  warnings: string[];
+  riskLabels: string[];
+}
+
 interface RecommendationCandidate extends RecommendedCourse {
   excluded: boolean;
 }
@@ -396,6 +409,61 @@ export function estimateWorkload(
     workloadScore,
     label,
     summary: `${label} semester workload: ${totalCourses} course(s), ${totalUnits} unit(s), ${highMathCourseCount} high-math course(s).`
+  };
+}
+
+function average(values: number[]): number {
+  if (values.length === 0) {
+    return 0;
+  }
+
+  return Number((values.reduce((total, value) => total + value, 0) / values.length).toFixed(1));
+}
+
+export function analyzeSemester(courses: Course[]): SemesterAnalysis {
+  const courseRecommendations = courses.map((course) => ({
+    course,
+    score: 0,
+    reasons: [],
+    warnings: []
+  }));
+  const totalUnits = courses.reduce((total, course) => total + course.units, 0);
+  const mathIntensity = courses.reduce((total, course) => total + course.mathIntensity, 0);
+  const estimatedStudyHours = courses.reduce(
+    (total, course) => total + course.estimatedStudyHours,
+    0
+  );
+  const examLoad = average(courses.map((course) => course.examWeight));
+  const assignmentLoad = average(courses.map((course) => course.assignmentWeight));
+  const warnings: string[] = [];
+  const riskLabels: string[] = [];
+
+  if (mathIntensity > 8) {
+    riskLabels.push("High Risk Semester");
+    warnings.push("High Risk Semester: total math intensity is above 8.");
+  }
+
+  if (examLoad > 70) {
+    riskLabels.push("Exam Heavy");
+    warnings.push("Exam Heavy: average exam load is above 70%.");
+  }
+
+  if (assignmentLoad > 70) {
+    riskLabels.push("Assignment Heavy");
+    warnings.push("Assignment Heavy: average assignment load is above 70%.");
+  }
+
+  return {
+    courseCount: courses.length,
+    totalUnits,
+    difficultyScore: calculateDifficulty(courseRecommendations),
+    examLoad,
+    assignmentLoad,
+    mathIntensity,
+    averageMathIntensity: average(courses.map((course) => course.mathIntensity)),
+    estimatedStudyHours,
+    warnings,
+    riskLabels
   };
 }
 
