@@ -33,69 +33,6 @@ const flexibleCoreCourseCodes = new Set(
   )
 );
 
-const copy = {
-  zh: {
-    eyebrow: "UQ Bachelor of Economics · 2026",
-    title: "课程数据库",
-    intro: "查看 Economics 课程、学期、先修课、难度和官方来源。",
-    search: "搜索课程代码或课程名称",
-    filters: "筛选",
-    all: "全部",
-    level: "年级",
-    category: "类别",
-    semester: "学期",
-    results: "门课程",
-    noResults: "没有找到匹配课程。",
-    units: "学分",
-    prerequisites: "先修课",
-    difficulty: "难度",
-    math: "数学强度",
-    confidence: "数据可信度",
-    source: "官方来源",
-    description: "课程简介",
-    categoryLabels: {
-      Core: "Core",
-      "Flexible Core": "Flexible Core",
-      Elective: "Elective"
-    },
-    unknown: "unknown",
-    completed: "Profile 已完成",
-    profileCompleted: "Profile 已完成",
-    expand: "展开详情",
-    collapse: "收起详情"
-  },
-  en: {
-    eyebrow: "UQ Bachelor of Economics · 2026",
-    title: "Course Database",
-    intro: "Browse Economics courses, semesters, prerequisites, difficulty, and official sources.",
-    search: "Search course code or course name",
-    filters: "Filters",
-    all: "All",
-    level: "Level",
-    category: "Category",
-    semester: "Semester",
-    results: "courses",
-    noResults: "No matching courses found.",
-    units: "units",
-    prerequisites: "Prerequisites",
-    difficulty: "Difficulty",
-    math: "Math intensity",
-    confidence: "Data confidence",
-    source: "Official source",
-    description: "Description",
-    categoryLabels: {
-      Core: "Core",
-      "Flexible Core": "Flexible Core",
-      Elective: "Elective"
-    },
-    unknown: "unknown",
-    completed: "Completed in Profile",
-    profileCompleted: "completed in Profile",
-    expand: "Expand details",
-    collapse: "Collapse details"
-  }
-};
-
 function getProgramCategory(courseCode) {
   if (coreCourseCodes.has(courseCode)) {
     return "Core";
@@ -177,10 +114,11 @@ function Metric({ icon: Icon, label, value }) {
 
 function CourseCard({ course, expanded, isCompleted, onToggle, t }) {
   const programCategory = getProgramCategory(course.courseCode);
-  const semesterText = formatList(course.semester, t.unknown);
-  const prerequisitesText = formatList(course.prerequisites, t.unknown);
-  const difficulty = course.difficultyScore ?? t.unknown;
-  const mathIntensity = course.mathIntensity ?? t.unknown;
+  const semesterText = formatList(course.semester, t.common.unknown);
+  const prerequisitesText = formatList(course.prerequisites, t.common.unknown);
+  const difficulty = course.difficultyScore ?? t.common.unknown;
+  const mathIntensity = course.mathIntensity ?? t.common.unknown;
+  const page = t.coursesPage;
 
   return (
     <article className={`${panelClass} overflow-hidden`}>
@@ -197,15 +135,15 @@ function CourseCard({ course, expanded, isCompleted, onToggle, t }) {
                 {course.courseCode}
               </span>
               <span className="rounded-full border border-[#e5e5ea] bg-white px-3 py-1 text-xs font-semibold text-[#6e6e73]">
-                {t.categoryLabels[programCategory]}
+                {page.categoryLabels[programCategory]}
               </span>
               <span className="rounded-full border border-[#e5e5ea] bg-white px-3 py-1 text-xs font-semibold text-[#6e6e73]">
-                Level {course.level}
+                {t.common.level} {course.level}
               </span>
               {isCompleted ? (
                 <span className="inline-flex items-center gap-1 rounded-full border border-[#bbf7d0] bg-[#f0fdf4] px-3 py-1 text-xs font-semibold text-[#166534]">
                   <CheckCircle2 className="h-3.5 w-3.5" aria-hidden="true" />
-                  {t.completed}
+                  {page.completed}
                 </span>
               ) : null}
             </div>
@@ -218,7 +156,7 @@ function CourseCard({ course, expanded, isCompleted, onToggle, t }) {
           </div>
 
           <span className="inline-flex min-h-10 shrink-0 items-center justify-center gap-2 rounded-full border border-[#e5e5ea] bg-white px-4 text-sm font-semibold text-[#6e6e73]">
-            {expanded ? t.collapse : t.expand}
+            {expanded ? page.collapse : page.expand}
             <ChevronDown
               className={`h-4 w-4 transition ${expanded ? "rotate-180" : ""}`}
               aria-hidden="true"
@@ -227,15 +165,15 @@ function CourseCard({ course, expanded, isCompleted, onToggle, t }) {
         </div>
 
         <div className="mt-5 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-          <Metric icon={GraduationCap} label={t.units} value={course.units ?? t.unknown} />
-          <Metric icon={Database} label={t.semester} value={semesterText} />
-          <Metric icon={Gauge} label={t.difficulty} value={`${difficulty}/5`} />
-          <Metric icon={Sigma} label={t.math} value={`${mathIntensity}/5`} />
+          <Metric icon={GraduationCap} label={t.common.units} value={course.units ?? t.common.unknown} />
+          <Metric icon={Database} label={page.semester} value={semesterText} />
+          <Metric icon={Gauge} label={page.difficulty} value={`${difficulty}/5`} />
+          <Metric icon={Sigma} label={page.math} value={`${mathIntensity}/5`} />
         </div>
 
         <div className={`${softPanelClass} mt-3 p-4`}>
           <p className="text-xs font-semibold uppercase tracking-normal text-[#86868b]">
-            {t.prerequisites}
+            {page.prerequisites}
           </p>
           <p className="mt-2 text-sm font-medium leading-6 text-[#1d1d1f]">
             {prerequisitesText}
@@ -247,15 +185,15 @@ function CourseCard({ course, expanded, isCompleted, onToggle, t }) {
         <div className="border-t border-[#e5e5ea] px-5 py-5 sm:px-6">
           <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_280px]">
             <div>
-              <p className="text-sm font-semibold text-[#1d1d1f]">{t.description}</p>
+              <p className="text-sm font-semibold text-[#1d1d1f]">{page.description}</p>
               <p className="mt-2 text-sm leading-7 text-[#6e6e73]">
-                {course.description || t.unknown}
+                {course.description || t.common.unknown}
               </p>
             </div>
             <aside className="grid gap-3">
               <div className={`${softPanelClass} p-4`}>
                 <p className="text-xs font-semibold uppercase tracking-normal text-[#86868b]">
-                  {t.confidence}
+                  {page.confidence}
                 </p>
                 <p className="mt-2 text-sm font-semibold text-[#1d1d1f]">
                   {course.dataConfidence}
@@ -263,7 +201,7 @@ function CourseCard({ course, expanded, isCompleted, onToggle, t }) {
               </div>
               <div className={`${softPanelClass} p-4`}>
                 <p className="text-xs font-semibold uppercase tracking-normal text-[#86868b]">
-                  {t.source}
+                  {page.source}
                 </p>
                 <div className="mt-3 grid gap-2">
                   {course.sourceUrl.map((source, index) => (
@@ -275,7 +213,7 @@ function CourseCard({ course, expanded, isCompleted, onToggle, t }) {
                       className="inline-flex min-h-9 items-center gap-2 rounded-lg border border-[#e5e5ea] bg-white px-3 text-xs font-semibold text-[#51247a] transition hover:bg-[#f5f5f7]"
                     >
                       <LinkIcon className="h-3.5 w-3.5" aria-hidden="true" />
-                      Source {index + 1}
+                      {page.sourceLink(index + 1)}
                     </a>
                   ))}
                 </div>
@@ -289,9 +227,9 @@ function CourseCard({ course, expanded, isCompleted, onToggle, t }) {
 }
 
 export default function CoursesPage() {
-  const { language } = useLanguage();
+  const { messages } = useLanguage();
   const { profile } = useProfile();
-  const t = copy[language];
+  const t = messages.coursesPage;
   const [query, setQuery] = useState("");
   const [levelFilter, setLevelFilter] = useState("All");
   const [categoryFilter, setCategoryFilter] = useState("All");
@@ -330,22 +268,22 @@ export default function CoursesPage() {
   }, [categoryFilter, courses, levelFilter, query, semesterFilter]);
 
   const levelOptions = [
-    { label: t.all, value: "All" },
-    { label: "Level 1", value: "1" },
-    { label: "Level 2", value: "2" },
-    { label: "Level 3", value: "3" }
+    { label: messages.common.all, value: "All" },
+    { label: `${messages.common.level} 1`, value: "1" },
+    { label: `${messages.common.level} 2`, value: "2" },
+    { label: `${messages.common.level} 3`, value: "3" }
   ];
   const categoryOptions = [
-    { label: t.all, value: "All" },
-    { label: "Core", value: "Core" },
-    { label: "Flexible Core", value: "Flexible Core" },
-    { label: "Elective", value: "Elective" }
+    { label: messages.common.all, value: "All" },
+    { label: t.categoryLabels.Core, value: "Core" },
+    { label: t.categoryLabels["Flexible Core"], value: "Flexible Core" },
+    { label: t.categoryLabels.Elective, value: "Elective" }
   ];
   const semesterOptions = [
-    { label: t.all, value: "All" },
-    { label: "Semester 1", value: "Semester 1" },
-    { label: "Semester 2", value: "Semester 2" },
-    { label: "Both", value: "Both" }
+    { label: messages.common.all, value: "All" },
+    { label: `${messages.common.semester} 1`, value: "Semester 1" },
+    { label: `${messages.common.semester} 2`, value: "Semester 2" },
+    { label: t.both, value: "Both" }
   ];
 
   return (
@@ -371,7 +309,8 @@ export default function CoursesPage() {
               {filteredCourses.length}
             </p>
             <p className="mt-4 border-t border-[#e5e5ea] pt-4 text-sm leading-6 text-[#6e6e73]">
-              {uqEconomicsCourses.length} total · {completedCourseSet.size} {t.profileCompleted}
+              {uqEconomicsCourses.length} {messages.common.courses} · {completedCourseSet.size}{" "}
+              {t.profileCompleted}
             </p>
           </div>
         </div>
@@ -381,7 +320,7 @@ export default function CoursesPage() {
         <div className="grid gap-5 lg:grid-cols-[minmax(260px,1fr)_2fr] lg:items-start">
           <label className="block">
             <span className="text-xs font-semibold uppercase tracking-normal text-[#86868b]">
-              Search
+              {t.searchLabel}
             </span>
             <span className="relative mt-2 block">
               <Search
@@ -440,7 +379,7 @@ export default function CoursesPage() {
                   currentCourseCode === course.courseCode ? "" : course.courseCode
                 )
               }
-              t={t}
+              t={messages}
             />
           ))
         ) : (

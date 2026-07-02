@@ -13,6 +13,7 @@ import {
   Settings
 } from "lucide-react";
 import { useLanguage } from "@/components/LanguageProvider";
+import { LanguageSwitcher } from "@/components/LanguageSwitcher";
 import { useProfile } from "@/components/ProfileProvider";
 import { SITE_VERSION } from "@/lib/siteMeta";
 
@@ -25,90 +26,11 @@ const navItems = [
 ];
 
 const footerLinks = [
-  { href: "/about", label: "About" },
-  { href: "/privacy", label: "Privacy" },
-  { href: "/disclaimer", label: "Disclaimer" },
-  { href: "/terms", label: "Terms" }
+  { href: "/about", key: "about" },
+  { href: "/privacy", key: "privacy" },
+  { href: "/disclaimer", key: "disclaimer" },
+  { href: "/terms", key: "terms" }
 ];
-
-const copy = {
-  zh: {
-    brand: "GradPlan",
-    subtitle: "Plan Your Degree with Confidence.",
-    settings: "Profile",
-    comingSoon: "暂未开放",
-    resetAllData: "Reset All Data",
-    footerBrand: "GradPlan Beta",
-    footerBuiltBy: "Built independently by a university student.",
-    footerUnofficial: "Unofficial academic planning platform.",
-    footerNotAffiliated: "Not affiliated with The University of Queensland.",
-    footerBetaWarning:
-      "Beta Version — Please verify all academic decisions with official UQ resources before enrolling in courses.",
-    resetConfirm:
-      "确定要清空 Academic Profile 吗？Dashboard、GPA、Course Planner 和 Graduation Checker 会同步重置。",
-    nav: {
-      dashboard: "仪表盘",
-      gpaPlanner: "GPA 规划",
-      coursePlanner: "选课规划",
-      graduationChecker: "毕业检查",
-      courseDatabase: "课程库"
-    }
-  },
-  en: {
-    brand: "GradPlan",
-    subtitle: "Plan Your Degree with Confidence.",
-    settings: "Profile",
-    comingSoon: "Coming soon",
-    resetAllData: "Reset All Data",
-    footerBrand: "GradPlan Beta",
-    footerBuiltBy: "Built independently by a university student.",
-    footerUnofficial: "Unofficial academic planning platform.",
-    footerNotAffiliated: "Not affiliated with The University of Queensland.",
-    footerBetaWarning:
-      "Beta Version — Please verify all academic decisions with official UQ resources before enrolling in courses.",
-    resetConfirm:
-      "Clear Academic Profile? Dashboard, GPA Planner, Course Planner, and Graduation Checker will reset together.",
-    nav: {
-      dashboard: "Dashboard",
-      gpaPlanner: "GPA Planner",
-      coursePlanner: "Course Planner",
-      graduationChecker: "Graduation Checker",
-      courseDatabase: "Course Database"
-    }
-  }
-};
-
-function LanguageToggle({ compact = false }) {
-  const { language, setLanguage } = useLanguage();
-  const options = compact
-    ? [
-        { key: "zh", label: "中" },
-        { key: "en", label: "EN" }
-      ]
-    : [
-        { key: "zh", label: "中文" },
-        { key: "en", label: "EN" }
-      ];
-
-  return (
-    <div className="flex rounded-full border border-[#e5e5ea] bg-[#f5f5f7] p-1">
-      {options.map((item) => (
-        <button
-          key={item.key}
-          type="button"
-          className={`rounded-full px-3 py-1.5 text-xs font-black transition ${
-            language === item.key
-              ? "bg-white text-[#1d1d1f] shadow-[0_1px_2px_rgba(0,0,0,0.06)]"
-              : "text-[#86868b] hover:text-[#1d1d1f]"
-          }`}
-          onClick={() => setLanguage(item.key)}
-        >
-          {item.label}
-        </button>
-      ))}
-    </div>
-  );
-}
 
 function ResetAllDataButton({ label, confirmMessage, resetProfile, compact = false }) {
   function resetAllData() {
@@ -189,12 +111,12 @@ function AppFooter({ pathname, t }) {
     <footer className="mx-auto w-full max-w-7xl border-t border-[#e5e5ea] px-4 py-8 text-sm text-[#6e6e73] dark:border-[#2c2c2e] dark:text-[#c7c7cc] sm:px-6">
       {showHomeDisclaimer ? (
         <div className="mb-5 grid gap-1">
-          <p className="font-semibold text-[#1d1d1f] dark:text-white">{t.footerBrand}</p>
-          <p>{t.footerBuiltBy}</p>
-          <p>{t.footerUnofficial}</p>
-          <p>{t.footerNotAffiliated}</p>
+          <p className="font-semibold text-[#1d1d1f] dark:text-white">{t.footer.brand}</p>
+          <p>{t.footer.builtBy}</p>
+          <p>{t.footer.unofficial}</p>
+          <p>{t.footer.notAffiliated}</p>
           <p className="text-xs leading-5 text-[#86868b] dark:text-[#a1a1a6]">
-            {t.footerBetaWarning}
+            {t.footer.betaWarning}
           </p>
         </div>
       ) : null}
@@ -206,11 +128,13 @@ function AppFooter({ pathname, t }) {
               href={item.href}
               className="font-semibold transition hover:text-[#1d1d1f] dark:hover:text-white"
             >
-              {item.label}
+              {t.footer.links[item.key]}
             </Link>
           ))}
         </nav>
-        <p className="font-semibold">Version {SITE_VERSION}</p>
+        <p className="font-semibold">
+          {t.footer.version} {SITE_VERSION}
+        </p>
       </div>
     </footer>
   );
@@ -218,10 +142,9 @@ function AppFooter({ pathname, t }) {
 
 export function AppShell({ children }) {
   const pathname = usePathname();
-  const { language } = useLanguage();
+  const { messages: t } = useLanguage();
   const { resetProfile } = useProfile();
-  const t = copy[language];
-  const navLabel = language === "zh" ? "主导航" : "Main navigation";
+  const navLabel = t.common.navLabel;
 
   return (
     <div className="min-h-screen bg-white pb-24 text-[#1d1d1f] dark:bg-[#0b0b0c] dark:text-white lg:pb-0">
@@ -233,10 +156,10 @@ export function AppShell({ children }) {
             </span>
             <span className="min-w-0">
               <span className="block text-sm font-black leading-tight text-[#1d1d1f] dark:text-white">
-                {t.brand}
+                {t.common.brand}
               </span>
               <span className="block truncate text-xs font-medium text-[#6e6e73] dark:text-[#c7c7cc]">
-                {t.subtitle}
+                {t.common.subtitle}
               </span>
             </span>
           </Link>
@@ -247,17 +170,17 @@ export function AppShell({ children }) {
                 key={item.key}
                 item={item}
                 label={t.nav[item.key]}
-                comingSoon={t.comingSoon}
+                comingSoon={t.common.comingSoon}
                 pathname={pathname}
               />
             ))}
           </nav>
 
-          <div className="mt-auto rounded-lg bg-[#f5f5f7] p-2">
-            <LanguageToggle />
+          <div className="mt-auto rounded-lg bg-[#f5f5f7] p-2 dark:bg-[#1c1c1e]">
+            <LanguageSwitcher />
             <ResetAllDataButton
-              label={t.resetAllData}
-              confirmMessage={t.resetConfirm}
+              label={t.common.resetAllData}
+              confirmMessage={t.common.resetConfirm}
               resetProfile={resetProfile}
             />
           </div>
@@ -272,10 +195,10 @@ export function AppShell({ children }) {
                 </span>
                 <span className="min-w-0">
                   <span className="block text-sm font-black leading-tight text-[#1d1d1f] dark:text-white">
-                    {t.brand}
+                    {t.common.brand}
                   </span>
                   <span className="block truncate text-xs font-medium text-[#6e6e73] dark:text-[#c7c7cc]">
-                    {t.subtitle}
+                    {t.common.subtitle}
                   </span>
                 </span>
               </Link>
@@ -283,29 +206,30 @@ export function AppShell({ children }) {
                 <Link
                   href="/profile"
                   className="grid h-10 w-10 place-items-center rounded-full border border-[#e5e5ea] bg-white text-[#6e6e73] transition hover:bg-[#f5f5f7] hover:text-[#1d1d1f]"
-                  aria-label={t.settings}
-                  title={t.settings}
+                  aria-label={t.common.profile}
+                  title={t.common.profile}
                 >
                   <Settings className="h-4 w-4" aria-hidden="true" />
                 </Link>
                 <ResetAllDataButton
-                  label={t.resetAllData}
-                  confirmMessage={t.resetConfirm}
+                  label={t.common.resetAllData}
+                  confirmMessage={t.common.resetConfirm}
                   resetProfile={resetProfile}
                   compact
                 />
-                <LanguageToggle compact />
+                <LanguageSwitcher compact />
               </div>
             </div>
           </header>
 
           <header className="hidden border-b border-[#e5e5ea] bg-white px-6 py-5 lg:block">
             <div className="mx-auto flex max-w-7xl items-center justify-end">
+              <LanguageSwitcher />
               <button
                 type="button"
-                className="mr-3 inline-flex min-h-10 items-center gap-2 rounded-full border border-[#e5e5ea] bg-white px-4 text-sm font-semibold text-[#6e6e73] transition hover:bg-[#f5f5f7] hover:text-[#1d1d1f]"
+                className="ml-3 mr-3 inline-flex min-h-10 items-center gap-2 rounded-full border border-[#e5e5ea] bg-white px-4 text-sm font-semibold text-[#6e6e73] transition hover:bg-[#f5f5f7] hover:text-[#1d1d1f]"
                 onClick={() => {
-                  if (!window.confirm(t.resetConfirm)) {
+                  if (!window.confirm(t.common.resetConfirm)) {
                     return;
                   }
 
@@ -313,15 +237,15 @@ export function AppShell({ children }) {
                 }}
               >
                 <RotateCcw className="h-4 w-4" aria-hidden="true" />
-                {t.resetAllData}
+                {t.common.resetAllData}
               </button>
               <Link
                 href="/profile"
                 className="inline-flex min-h-10 items-center gap-2 rounded-full border border-[#e5e5ea] bg-white px-4 text-sm font-semibold text-[#6e6e73] transition hover:bg-[#f5f5f7] hover:text-[#1d1d1f]"
-                title={t.settings}
+                title={t.common.profile}
               >
                 <Settings className="h-4 w-4" aria-hidden="true" />
-                {t.settings}
+                {t.common.profile}
               </Link>
             </div>
           </header>
@@ -342,7 +266,7 @@ export function AppShell({ children }) {
                   key={item.key}
                   item={item}
                   label={t.nav[item.key]}
-                  comingSoon={t.comingSoon}
+                  comingSoon={t.common.comingSoon}
                   pathname={pathname}
                   mobile
                 />

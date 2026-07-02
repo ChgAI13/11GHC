@@ -27,6 +27,7 @@ import {
   recommendCourses,
   uqBachelorOfEconomicsProgram
 } from "@/lib/recommendationEngine";
+import { useLanguage } from "@/components/LanguageProvider";
 import { useProfile } from "@/components/ProfileProvider";
 
 const panelClass = "rounded-lg border border-[#e5e5ea] bg-white shadow-[0_1px_2px_rgba(0,0,0,0.04)]";
@@ -42,8 +43,8 @@ function uniqueStrings(values) {
   return [...new Set(values.filter(Boolean))];
 }
 
-function formatCourseMeta(course) {
-  return `Level ${course.level} · ${course.units} units · ${course.category}`;
+function formatCourseMeta(course, messages) {
+  return `${messages.common.level} ${course.level} · ${course.units} ${messages.common.units} · ${course.category}`;
 }
 
 function plannedCourseCodes(semesterPlan) {
@@ -61,24 +62,34 @@ function getFirstAvailableSemesterId(semesterPlan) {
   return semesterPlan.find((semester) => semester.courses.length < 4)?.id ?? semesterPlan[0]?.id;
 }
 
-function ProfileIssue({ profile }) {
+function translateRiskLabel(label, t) {
+  return t.riskLabels[label] ?? label;
+}
+
+function translateEngineText(text, t) {
+  return t.engineText[text] ?? text;
+}
+
+function ProfileIssue({ profile, t }) {
   if (profile.currentGpa && profile.targetGpa) {
     return null;
   }
 
   return (
     <div className="rounded-lg border border-[#fed7aa] bg-[#fff7ed] p-4 text-sm leading-6 text-[#9a3412]">
-      推荐结果会更准确，如果你先到{" "}
+      {t.profileIssuePrefix}{" "}
       <Link href="/profile" className="font-semibold underline underline-offset-4">
-        Academic Profile
+        {t.profileIssueLink}
       </Link>{" "}
-      填写 Current GPA、Target GPA 和已完成课程。
+      {t.profileIssueSuffix}
     </div>
   );
 }
 
 export default function CoursePlannerPage() {
+  const { messages } = useLanguage();
   const { profile, updateProfile } = useProfile();
+  const t = messages.plannerPage;
   const [selectedCourseBySemester, setSelectedCourseBySemester] = useState({});
   const [activeSemesterId, setActiveSemesterId] = useState("semester-1");
   const semesterPlan = profile.semesterPlan;
@@ -241,18 +252,18 @@ export default function CoursePlannerPage() {
           <div>
             <div className="inline-flex items-center gap-2 rounded-full border border-[#e5e5ea] bg-white px-3 py-1.5 text-sm font-medium text-[#6e6e73]">
               <GraduationCap className="h-4 w-4 text-[#51247a]" aria-hidden="true" />
-              UQ Bachelor of Economics
+              {t.eyebrow}
             </div>
             <h1 className="mt-6 max-w-3xl text-4xl font-semibold leading-tight tracking-normal text-[#1d1d1f] sm:text-6xl">
-              Degree Planner
+              {t.title}
             </h1>
             <p className="mt-4 max-w-2xl text-base leading-7 text-[#6e6e73] sm:text-lg">
-              把未来 6 个学期排出来。课程来自最新 Course Database，毕业检查来自 Program Rules，推荐来自 Recommendation Engine。
+              {t.intro}
             </p>
           </div>
 
           <div className={`${panelClass} p-5`}>
-            <p className="text-sm font-medium text-[#6e6e73]">Planned Degree Progress</p>
+            <p className="text-sm font-medium text-[#6e6e73]">{t.plannedProgress}</p>
             <p className="mt-2 text-5xl font-semibold tracking-normal text-[#1d1d1f]">
               {graduationResult.overallProgress}%
             </p>
@@ -263,7 +274,10 @@ export default function CoursePlannerPage() {
               />
             </div>
             <p className="mt-4 border-t border-[#e5e5ea] pt-4 text-sm leading-6 text-[#6e6e73]">
-              {completedAndPlannedCourses.length} courses completed or planned · {graduationResult.missingUnits} units missing
+              {t.progressSummary({
+                count: completedAndPlannedCourses.length,
+                missingUnits: graduationResult.missingUnits
+              })}
             </p>
           </div>
         </div>
@@ -272,22 +286,24 @@ export default function CoursePlannerPage() {
       <section className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
         <div className={`${panelClass} p-5`}>
           <BookOpen className="h-5 w-5 text-[#51247a]" aria-hidden="true" />
-          <p className="mt-4 text-sm font-medium text-[#6e6e73]">Completed Courses</p>
+          <p className="mt-4 text-sm font-medium text-[#6e6e73]">
+            {messages.common.completedCourses}
+          </p>
           <p className="mt-1 text-4xl font-semibold text-[#1d1d1f]">{profile.completedCourses.length}</p>
         </div>
         <div className={`${panelClass} p-5`}>
           <ClipboardList className="h-5 w-5 text-[#51247a]" aria-hidden="true" />
-          <p className="mt-4 text-sm font-medium text-[#6e6e73]">Planned Courses</p>
+          <p className="mt-4 text-sm font-medium text-[#6e6e73]">{t.plannedCourses}</p>
           <p className="mt-1 text-4xl font-semibold text-[#1d1d1f]">{plannedCodes.length}</p>
         </div>
         <div className={`${panelClass} p-5`}>
           <Target className="h-5 w-5 text-[#51247a]" aria-hidden="true" />
-          <p className="mt-4 text-sm font-medium text-[#6e6e73]">Target GPA</p>
+          <p className="mt-4 text-sm font-medium text-[#6e6e73]">{messages.common.targetGpa}</p>
           <p className="mt-1 text-4xl font-semibold text-[#1d1d1f]">{profile.targetGpa || "-"}</p>
         </div>
         <div className={`${panelClass} p-5`}>
           <Sparkles className="h-5 w-5 text-[#51247a]" aria-hidden="true" />
-          <p className="mt-4 text-sm font-medium text-[#6e6e73]">Next Recommendations</p>
+          <p className="mt-4 text-sm font-medium text-[#6e6e73]">{t.nextRecommendations}</p>
           <p className="mt-1 text-4xl font-semibold text-[#1d1d1f]">
             {recommendationResult.recommendedCourses.length}
           </p>
@@ -299,10 +315,10 @@ export default function CoursePlannerPage() {
           <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
             <div>
               <h2 className="text-2xl font-semibold tracking-normal text-[#1d1d1f]">
-                Six-Semester Plan
+                {t.sixSemesterPlan}
               </h2>
               <p className="mt-1 text-sm leading-6 text-[#6e6e73]">
-                Add Course、Move Course、Remove Course 都会保存到 Academic Profile。
+                {t.sixSemesterDescription}
               </p>
             </div>
             <button
@@ -311,7 +327,7 @@ export default function CoursePlannerPage() {
               onClick={generateSemesterPlan}
             >
               <Sparkles className="h-4 w-4" aria-hidden="true" />
-              Generate Semester Plan
+              {t.generateSemesterPlan}
             </button>
           </div>
 
@@ -333,9 +349,12 @@ export default function CoursePlannerPage() {
                 >
                   <div className="flex items-start justify-between gap-3">
                     <div>
-                      <h3 className="text-lg font-semibold text-[#1d1d1f]">{semester.name}</h3>
+                      <h3 className="text-lg font-semibold text-[#1d1d1f]">
+                        {messages.common.semester} {semesterIndex + 1}
+                      </h3>
                       <p className="mt-1 text-sm text-[#6e6e73]">
-                        {semester.courses.length} courses · {getSemesterUnits(semester)} units
+                        {semester.courses.length} {messages.common.courses} ·{" "}
+                        {getSemesterUnits(semester)} {messages.common.units}
                       </p>
                     </div>
                     <span className="rounded-full border border-[#e5e5ea] bg-white px-3 py-1 text-xs font-semibold text-[#6e6e73]">
@@ -347,7 +366,7 @@ export default function CoursePlannerPage() {
                     className="mt-3 inline-flex min-h-9 items-center justify-center rounded-lg border border-[#e5e5ea] bg-white px-3 text-xs font-semibold text-[#6e6e73] transition hover:bg-[#f5f5f7] hover:text-[#1d1d1f]"
                     onClick={() => setActiveSemesterId(semester.id)}
                   >
-                    Analyze Semester
+                    {t.analyzeSemester}
                   </button>
 
                   <div className="mt-4 grid gap-3">
@@ -360,7 +379,7 @@ export default function CoursePlannerPage() {
                                 {course.code} · {course.name}
                               </p>
                               <p className="mt-1 text-xs leading-5 text-[#6e6e73]">
-                                {formatCourseMeta(course)}
+                                {formatCourseMeta(course, messages)}
                               </p>
                             </div>
                             <div className="flex shrink-0 items-center gap-1">
@@ -369,7 +388,7 @@ export default function CoursePlannerPage() {
                                 className="grid h-8 w-8 place-items-center rounded-lg border border-[#e5e5ea] bg-white text-[#6e6e73] transition hover:bg-[#f5f5f7] disabled:opacity-40"
                                 disabled={semesterIndex === 0}
                                 onClick={() => moveCourse(semester.id, course.code, -1)}
-                                title="Move Course up"
+                                title={t.moveUp}
                               >
                                 <ArrowUp className="h-4 w-4" aria-hidden="true" />
                               </button>
@@ -378,7 +397,7 @@ export default function CoursePlannerPage() {
                                 className="grid h-8 w-8 place-items-center rounded-lg border border-[#e5e5ea] bg-white text-[#6e6e73] transition hover:bg-[#f5f5f7] disabled:opacity-40"
                                 disabled={semesterIndex === semesterPlan.length - 1}
                                 onClick={() => moveCourse(semester.id, course.code, 1)}
-                                title="Move Course down"
+                                title={t.moveDown}
                               >
                                 <ArrowDown className="h-4 w-4" aria-hidden="true" />
                               </button>
@@ -386,7 +405,7 @@ export default function CoursePlannerPage() {
                                 type="button"
                                 className="grid h-8 w-8 place-items-center rounded-lg border border-[#e5e5ea] bg-white text-[#b91c1c] transition hover:bg-[#fef2f2]"
                                 onClick={() => removeCourse(semester.id, course.code)}
-                                title="Remove Course"
+                                title={t.removeCourse}
                               >
                                 <Trash2 className="h-4 w-4" aria-hidden="true" />
                               </button>
@@ -396,7 +415,7 @@ export default function CoursePlannerPage() {
                       ))
                     ) : (
                       <div className="rounded-lg border border-dashed border-[#d2d2d7] bg-white p-4 text-sm leading-6 text-[#86868b]">
-                        这个学期还没有课程。可以手动添加，也可以用推荐引擎生成计划。
+                        {t.emptySemester}
                       </div>
                     )}
                   </div>
@@ -412,7 +431,7 @@ export default function CoursePlannerPage() {
                         }))
                       }
                     >
-                      <option value="">Choose course</option>
+                      <option value="">{t.chooseCourse}</option>
                       {availableCourses.map((course) => (
                         <option key={course.code} value={course.code}>
                           {course.code} · {course.name}
@@ -426,7 +445,7 @@ export default function CoursePlannerPage() {
                       onClick={() => addCourse(semester.id, selectedCourseCode)}
                     >
                       <Plus className="h-4 w-4" aria-hidden="true" />
-                      Add Course
+                      {t.addCourse}
                     </button>
                   </div>
                 </article>
@@ -442,32 +461,38 @@ export default function CoursePlannerPage() {
                 <UserRound className="h-5 w-5" aria-hidden="true" />
               </span>
               <div>
-                <p className="text-sm font-medium text-[#6e6e73]">Academic Profile</p>
+                <p className="text-sm font-medium text-[#6e6e73]">
+                  {messages.common.academicProfile}
+                </p>
                 <p className="text-xl font-semibold text-[#1d1d1f]">{profile.program}</p>
               </div>
             </div>
             <div className="mt-5 grid gap-3">
               <div className={`${softPanelClass} p-4`}>
-                <p className="text-xs font-medium uppercase text-[#86868b]">Current / Target GPA</p>
+                <p className="text-xs font-medium uppercase text-[#86868b]">
+                  {t.currentTargetGpa}
+                </p>
                 <p className="mt-2 text-lg font-semibold text-[#1d1d1f]">
                   {profile.currentGpa || "-"} / {profile.targetGpa || "-"}
                 </p>
               </div>
               <div className={`${softPanelClass} p-4`}>
-                <p className="text-xs font-medium uppercase text-[#86868b]">Preferred Workload</p>
+                <p className="text-xs font-medium uppercase text-[#86868b]">
+                  {messages.common.preferredWorkload}
+                </p>
                 <p className="mt-2 text-lg font-semibold text-[#1d1d1f]">
-                  {profile.preferredWorkload}
+                  {t.workloadLabels[profile.preferredWorkload]}
                 </p>
               </div>
             </div>
           </section>
 
-          <ProfileIssue profile={profile} />
+          <ProfileIssue profile={profile} t={t} />
 
           <section className={`${panelClass} p-5`}>
             <div className="flex items-center justify-between gap-3">
               <div>
-                <p className="text-sm font-medium text-[#6e6e73]">Graduation Check</p>
+                <p className="text-sm font-medium text-[#6e6e73]">{t.graduationCheck}</p>
                 <p className="mt-1 text-3xl font-semibold text-[#1d1d1f]">
                   {graduationResult.overallProgress}%
                 </p>
@@ -475,16 +500,18 @@ export default function CoursePlannerPage() {
               <CheckCircle2 className="h-6 w-6 text-[#51247a]" aria-hidden="true" />
             </div>
             <p className="mt-4 border-t border-[#e5e5ea] pt-4 text-sm leading-6 text-[#6e6e73]">
-              使用当前 Profile + 已规划课程调用 Graduation Checker。
+              {t.graduationCheckDescription}
             </p>
           </section>
 
           <section className={`${panelClass} p-5`}>
             <div className="flex items-start justify-between gap-3">
               <div className="min-w-0">
-                <p className="text-sm font-medium text-[#6e6e73]">Semester Analysis</p>
+                <p className="text-sm font-medium text-[#6e6e73]">{t.semesterAnalysis}</p>
                 <h2 className="mt-1 text-2xl font-semibold tracking-normal text-[#1d1d1f]">
-                  {activeSemester?.name ?? "Semester"}
+                  {activeSemester
+                    ? `${messages.common.semester} ${semesterPlan.findIndex((semester) => semester.id === activeSemester.id) + 1}`
+                    : messages.common.semester}
                 </h2>
               </div>
               <Target className="h-6 w-6 shrink-0 text-[#51247a]" aria-hidden="true" />
@@ -495,34 +522,36 @@ export default function CoursePlannerPage() {
               value={activeSemester?.id ?? ""}
               onChange={(event) => setActiveSemesterId(event.target.value)}
             >
-              {semesterPlan.map((semester) => (
+              {semesterPlan.map((semester, index) => (
                 <option key={semester.id} value={semester.id}>
-                  {semester.name}
+                  {messages.common.semester} {index + 1}
                 </option>
               ))}
             </select>
 
             <div className="mt-4 grid grid-cols-2 gap-3">
               <div className={`${softPanelClass} p-4`}>
-                <p className="text-xs font-medium uppercase text-[#86868b]">Difficulty</p>
+                <p className="text-xs font-medium uppercase text-[#86868b]">
+                  {messages.common.difficulty}
+                </p>
                 <p className="mt-2 text-2xl font-semibold text-[#1d1d1f]">
                   {semesterAnalysis.difficultyScore || "-"}
                 </p>
               </div>
               <div className={`${softPanelClass} p-4`}>
-                <p className="text-xs font-medium uppercase text-[#86868b]">Math Intensity</p>
+                <p className="text-xs font-medium uppercase text-[#86868b]">{t.mathIntensity}</p>
                 <p className="mt-2 text-2xl font-semibold text-[#1d1d1f]">
                   {semesterAnalysis.mathIntensity}
                 </p>
               </div>
               <div className={`${softPanelClass} p-4`}>
-                <p className="text-xs font-medium uppercase text-[#86868b]">Exam Load</p>
+                <p className="text-xs font-medium uppercase text-[#86868b]">{t.examLoad}</p>
                 <p className="mt-2 text-2xl font-semibold text-[#1d1d1f]">
                   {semesterAnalysis.examLoad}%
                 </p>
               </div>
               <div className={`${softPanelClass} p-4`}>
-                <p className="text-xs font-medium uppercase text-[#86868b]">Assignment Load</p>
+                <p className="text-xs font-medium uppercase text-[#86868b]">{t.assignmentLoad}</p>
                 <p className="mt-2 text-2xl font-semibold text-[#1d1d1f]">
                   {semesterAnalysis.assignmentLoad}%
                 </p>
@@ -531,13 +560,16 @@ export default function CoursePlannerPage() {
 
             <div className={`${softPanelClass} mt-3 p-4`}>
               <p className="text-xs font-medium uppercase text-[#86868b]">
-                Estimated Study Hours
+                {t.estimatedStudyHours}
               </p>
               <p className="mt-2 text-2xl font-semibold text-[#1d1d1f]">
-                {semesterAnalysis.estimatedStudyHours} hrs / week
+                {semesterAnalysis.estimatedStudyHours} {t.hoursPerWeek}
               </p>
               <p className="mt-1 text-sm leading-6 text-[#6e6e73]">
-                {semesterAnalysis.courseCount} courses · {semesterAnalysis.totalUnits} units
+                {t.courseUnitsSummary({
+                  courseCount: semesterAnalysis.courseCount,
+                  units: semesterAnalysis.totalUnits
+                })}
               </p>
             </div>
 
@@ -548,13 +580,13 @@ export default function CoursePlannerPage() {
                     key={label}
                     className="rounded-full border border-[#fed7aa] bg-[#fff7ed] px-3 py-1 text-xs font-semibold text-[#9a3412]"
                   >
-                    {label}
+                    {translateRiskLabel(label, t)}
                   </span>
                 ))}
               </div>
             ) : (
               <p className="mt-4 rounded-lg border border-[#bbf7d0] bg-[#f0fdf4] p-3 text-sm font-medium leading-6 text-[#166534]">
-                No semester risk detected.
+                {t.noSemesterRisk}
               </p>
             )}
           </section>
@@ -562,7 +594,7 @@ export default function CoursePlannerPage() {
           <section className={`${panelClass} p-5`}>
             <div className="flex items-center gap-2 text-[#1d1d1f]">
               <AlertTriangle className="h-5 w-5 text-[#51247a]" aria-hidden="true" />
-              <p className="text-sm font-semibold">Warnings</p>
+              <p className="text-sm font-semibold">{t.warnings}</p>
             </div>
             <div className="mt-4 grid gap-2">
               {simulatorWarnings.length ? (
@@ -573,20 +605,22 @@ export default function CoursePlannerPage() {
                       key={warning}
                       className="rounded-lg border border-[#fed7aa] bg-[#fff7ed] p-3 text-sm leading-6 text-[#9a3412]"
                     >
-                      {warning}
+                      {translateEngineText(warning, t)}
                     </p>
                   ))
               ) : (
                 <p className="text-sm leading-6 text-[#86868b]">
-                  Add, move, or remove courses to refresh simulator warnings.
+                  {t.warningHint}
                 </p>
               )}
             </div>
           </section>
 
           <section className={`${panelClass} p-5`}>
-            <p className="text-sm font-medium text-[#6e6e73]">Recommendation Engine</p>
-            <p className="mt-3 text-sm leading-6 text-[#6e6e73]">{recommendationResult.reason}</p>
+            <p className="text-sm font-medium text-[#6e6e73]">{t.recommendationEngine}</p>
+            <p className="mt-3 text-sm leading-6 text-[#6e6e73]">
+              {translateEngineText(recommendationResult.reason, t)}
+            </p>
           </section>
         </aside>
       </div>
@@ -598,10 +632,10 @@ export default function CoursePlannerPage() {
           </span>
           <div>
             <h2 className="text-2xl font-semibold tracking-normal text-[#1d1d1f]">
-              Recommended Next Courses
+              {t.recommendedNextCourses}
             </h2>
             <p className="mt-1 text-sm text-[#6e6e73]">
-              这里只展示 Recommendation Engine 的结果。点击 Add to Plan 会加入第一个有空位的 semester。
+              {t.recommendedDescription}
             </p>
           </div>
         </div>
@@ -616,10 +650,13 @@ export default function CoursePlannerPage() {
                       {recommendation.course.code} · {recommendation.course.name}
                     </p>
                     <p className="mt-1 text-sm leading-6 text-[#6e6e73]">
-                      {formatCourseMeta(recommendation.course)}
+                      {formatCourseMeta(recommendation.course, messages)}
                     </p>
                     <p className="mt-3 text-sm leading-6 text-[#6e6e73]">
-                      {recommendation.reasons[0] || recommendation.course.description}
+                      {translateEngineText(
+                        recommendation.reasons[0] || recommendation.course.description,
+                        t
+                      )}
                     </p>
                   </div>
                   <button
@@ -628,14 +665,14 @@ export default function CoursePlannerPage() {
                     onClick={() => addRecommendedCourse(recommendation.course.code)}
                   >
                     <Plus className="h-4 w-4" aria-hidden="true" />
-                    Add to Plan
+                    {t.addToPlan}
                   </button>
                 </div>
               </article>
             ))
           ) : (
             <div className={`${softPanelClass} p-5 text-sm leading-6 text-[#6e6e73]`}>
-              当前没有可推荐课程。请检查 Profile 或清理已规划课程。
+              {t.noRecommendations}
             </div>
           )}
         </div>

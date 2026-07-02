@@ -13,6 +13,7 @@ import {
   SlidersHorizontal
 } from "lucide-react";
 import { uqBachelorOfEconomicsCourses } from "@/data/courses";
+import { useLanguage } from "@/components/LanguageProvider";
 import { useProfile } from "@/components/ProfileProvider";
 import { calculateAcademicProgress } from "@/lib/academicProgress";
 
@@ -31,9 +32,11 @@ const graduationSemesterOptions = [
 ];
 
 export default function AcademicProfilePage() {
+  const { messages } = useLanguage();
   const { profile, academicProgress, saveProfile } = useProfile();
+  const t = messages.profilePage;
   const [draftProfile, setDraftProfile] = useState(profile);
-  const [savedMessage, setSavedMessage] = useState("");
+  const [hasSaved, setHasSaved] = useState(false);
   const [courseSearch, setCourseSearch] = useState("");
 
   const completedCourseSet = useMemo(
@@ -67,7 +70,7 @@ export default function AcademicProfilePage() {
   }, [profile]);
 
   function updateField(field, value) {
-    setSavedMessage("");
+    setHasSaved(false);
     setDraftProfile((currentProfile) => ({
       ...currentProfile,
       [field]: value
@@ -75,7 +78,7 @@ export default function AcademicProfilePage() {
   }
 
   function toggleCompletedCourse(courseCode) {
-    setSavedMessage("");
+    setHasSaved(false);
     setDraftProfile((currentProfile) => {
       const isCompleted = currentProfile.completedCourses.includes(courseCode);
 
@@ -92,7 +95,7 @@ export default function AcademicProfilePage() {
     event.preventDefault();
     const savedProfile = saveProfile(draftProfile);
     setDraftProfile(savedProfile);
-    setSavedMessage("Academic Profile 已保存，Dashboard、GPA、Course Planner 和 Graduation Checker 已同步更新。");
+    setHasSaved(true);
   }
 
   return (
@@ -102,24 +105,28 @@ export default function AcademicProfilePage() {
           <div>
             <div className="inline-flex items-center gap-2 rounded-full border border-[#e5e5ea] bg-white px-3 py-1.5 text-sm font-medium text-[#6e6e73]">
               <Settings2 className="h-4 w-4 text-[#51247a]" aria-hidden="true" />
-              Student Data Hub
+              {t.eyebrow}
             </div>
             <h1 className="mt-6 max-w-3xl text-4xl font-semibold leading-tight tracking-normal text-[#1d1d1f] sm:text-6xl">
-              Academic Profile
+              {t.title}
             </h1>
             <p className="mt-4 max-w-2xl text-base leading-7 text-[#6e6e73] sm:text-lg">
-              这里是整个产品唯一的数据入口。保存后，GPA Planner、Course Planner 和 Graduation Checker 都可以读取同一份学习资料。
+              {t.intro}
             </p>
           </div>
 
           <div className={`${panelClass} p-5`}>
-            <p className="text-sm font-medium text-[#6e6e73]">Profile Status</p>
+            <p className="text-sm font-medium text-[#6e6e73]">{t.status}</p>
             <p className="mt-2 text-3xl font-semibold tracking-normal text-[#1d1d1f]">
-              {academicProgress.completedCourseCount} / {academicProgress.totalCourseCount} courses
+              {academicProgress.completedCourseCount} / {academicProgress.totalCourseCount}{" "}
+              {messages.common.courses}
             </p>
             <p className="mt-4 border-t border-[#e5e5ea] pt-4 text-sm leading-6 text-[#6e6e73]">
-              Current GPA {profile.currentGpa || "-"} · Target GPA {profile.targetGpa || "-"} ·{" "}
-              {academicProgress.remainingCourseCount} courses remaining
+              {t.statusLine({
+                currentGpa: profile.currentGpa,
+                targetGpa: profile.targetGpa,
+                remainingCourses: academicProgress.remainingCourseCount
+              })}
             </p>
           </div>
         </div>
@@ -133,17 +140,17 @@ export default function AcademicProfilePage() {
             </span>
             <div>
               <h2 className="text-2xl font-semibold tracking-normal text-[#1d1d1f]">
-                基础信息
+                {t.basicInfo}
               </h2>
               <p className="mt-1 text-sm text-[#6e6e73]">
-                第一版固定支持 University of Queensland · Bachelor of Economics。
+                {t.fixedSupport}
               </p>
             </div>
           </div>
 
           <div className="mt-6 grid gap-4 sm:grid-cols-2">
             <label className="block">
-              <span className="text-sm font-medium text-[#6e6e73]">University</span>
+              <span className="text-sm font-medium text-[#6e6e73]">{t.university}</span>
               <input
                 className={`${inputClass} bg-[#fbfbfd]`}
                 type="text"
@@ -153,7 +160,7 @@ export default function AcademicProfilePage() {
             </label>
 
             <label className="block">
-              <span className="text-sm font-medium text-[#6e6e73]">Program</span>
+              <span className="text-sm font-medium text-[#6e6e73]">{t.program}</span>
               <input
                 className={`${inputClass} bg-[#fbfbfd]`}
                 type="text"
@@ -165,7 +172,7 @@ export default function AcademicProfilePage() {
 
           <div className="mt-4 grid gap-4 sm:grid-cols-2">
             <label className="block">
-              <span className="text-sm font-medium text-[#6e6e73]">Current GPA</span>
+              <span className="text-sm font-medium text-[#6e6e73]">{messages.common.currentGpa}</span>
               <input
                 className={inputClass}
                 type="number"
@@ -173,14 +180,14 @@ export default function AcademicProfilePage() {
                 max="7"
                 step="0.01"
                 inputMode="decimal"
-                placeholder="例如 5.60"
+                placeholder={t.currentGpaPlaceholder}
                 value={draftProfile.currentGpa}
                 onChange={(event) => updateField("currentGpa", event.target.value)}
               />
             </label>
 
             <label className="block">
-              <span className="text-sm font-medium text-[#6e6e73]">Target GPA</span>
+              <span className="text-sm font-medium text-[#6e6e73]">{messages.common.targetGpa}</span>
               <input
                 className={inputClass}
                 type="number"
@@ -188,7 +195,7 @@ export default function AcademicProfilePage() {
                 max="7"
                 step="0.01"
                 inputMode="decimal"
-                placeholder="例如 6.20"
+                placeholder={t.targetGpaPlaceholder}
                 value={draftProfile.targetGpa}
                 onChange={(event) => updateField("targetGpa", event.target.value)}
               />
@@ -198,7 +205,7 @@ export default function AcademicProfilePage() {
           <div className="mt-4 grid gap-4 sm:grid-cols-2">
             <label className="block">
               <span className="text-sm font-medium text-[#6e6e73]">
-                Expected Graduation Semester
+                {t.expectedGraduationSemester}
               </span>
               <select
                 className={inputClass}
@@ -207,7 +214,7 @@ export default function AcademicProfilePage() {
                   updateField("expectedGraduationSemester", event.target.value)
                 }
               >
-                <option value="">请选择预计毕业学期</option>
+                <option value="">{t.graduationPlaceholder}</option>
                 {graduationSemesterOptions.map((semester) => (
                   <option key={semester} value={semester}>
                     {semester}
@@ -217,7 +224,9 @@ export default function AcademicProfilePage() {
             </label>
 
             <div>
-              <p className="text-sm font-medium text-[#6e6e73]">Preferred Workload</p>
+              <p className="text-sm font-medium text-[#6e6e73]">
+                {messages.common.preferredWorkload}
+              </p>
               <div className="mt-2 grid h-14 grid-cols-3 rounded-lg border border-[#e5e5ea] bg-[#f5f5f7] p-1">
                 {workloadOptions.map((option) => (
                   <button
@@ -230,7 +239,7 @@ export default function AcademicProfilePage() {
                     }`}
                     onClick={() => updateField("preferredWorkload", option)}
                   >
-                    {option}
+                    {t.workloadLabels[option]}
                   </button>
                 ))}
               </div>
@@ -240,10 +249,15 @@ export default function AcademicProfilePage() {
           <div className="mt-6">
             <div className="flex items-center justify-between gap-3">
               <div>
-                <p className="text-sm font-medium text-[#6e6e73]">Completed Courses</p>
+                <p className="text-sm font-medium text-[#6e6e73]">
+                  {messages.common.completedCourses}
+                </p>
                 <p className="mt-1 text-sm text-[#86868b]">
-                  已完成 {draftProgress.completedCourseCount} / {draftProgress.totalCourseCount} 门课程 · 剩余{" "}
-                  {draftProgress.remainingCourseCount} 门
+                  {t.completedSummary({
+                    completed: draftProgress.completedCourseCount,
+                    total: draftProgress.totalCourseCount,
+                    remaining: draftProgress.remainingCourseCount
+                  })}
                 </p>
               </div>
               <button
@@ -251,12 +265,12 @@ export default function AcademicProfilePage() {
                 className="rounded-full border border-[#e5e5ea] bg-white px-3 py-1.5 text-xs font-semibold text-[#6e6e73] transition hover:bg-[#f5f5f7]"
                 onClick={() => updateField("completedCourses", [])}
               >
-                Clear
+                {messages.common.clear}
               </button>
             </div>
 
             <label className="mt-4 block">
-              <span className="text-sm font-medium text-[#6e6e73]">Search courses</span>
+              <span className="text-sm font-medium text-[#6e6e73]">{t.searchCourses}</span>
               <span className="relative mt-2 block">
                 <Search
                   className="pointer-events-none absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-[#86868b]"
@@ -266,7 +280,7 @@ export default function AcademicProfilePage() {
                   className={`${inputClass} mt-0 pl-11`}
                   type="search"
                   value={courseSearch}
-                  placeholder="搜索课程代码或名称，例如 ECON2010"
+                  placeholder={t.searchPlaceholder}
                   onChange={(event) => setCourseSearch(event.target.value)}
                 />
               </span>
@@ -275,9 +289,9 @@ export default function AcademicProfilePage() {
             {selectedCourses.length ? (
               <div className="mt-4 rounded-lg border border-[#e5e5ea] bg-[#fbfbfd] p-4">
                 <div className="flex items-center justify-between gap-3">
-                  <p className="text-sm font-semibold text-[#1d1d1f]">已选择课程</p>
+                  <p className="text-sm font-semibold text-[#1d1d1f]">{t.selectedCourses}</p>
                   <p className="text-xs font-semibold text-[#86868b]">
-                    {selectedCourses.length} selected
+                    {selectedCourses.length} {t.selected}
                   </p>
                 </div>
                 <div className="mt-3 flex flex-wrap gap-2">
@@ -287,7 +301,7 @@ export default function AcademicProfilePage() {
                       type="button"
                       className="rounded-full border border-[#51247a] bg-white px-3 py-1.5 text-xs font-semibold text-[#51247a] transition hover:bg-[#fbf8ff]"
                       onClick={() => toggleCompletedCourse(course.code)}
-                      title="点击取消选择"
+                      title={t.unselectTitle}
                     >
                       {course.code} ×
                     </button>
@@ -329,12 +343,12 @@ export default function AcademicProfilePage() {
             </div>
             {!filteredCourses.length ? (
               <div className={`${softPanelClass} mt-4 p-5 text-sm leading-6 text-[#86868b]`}>
-                没有找到匹配课程。试试课程代码，例如 ECON1010、ECON2010、ECON3440。
+                {t.noCourseFound}
               </div>
             ) : null}
             {!courseSearch.trim() ? (
               <p className="mt-3 text-sm leading-6 text-[#86868b]">
-                默认只显示前 8 门课程。输入课程代码或名称后会筛选完整课程库。
+                {t.defaultCourseHint}
               </p>
             ) : null}
           </div>
@@ -347,18 +361,18 @@ export default function AcademicProfilePage() {
                 <SlidersHorizontal className="h-5 w-5" aria-hidden="true" />
               </span>
               <div>
-                <p className="text-sm font-medium text-[#6e6e73]">Data Flow</p>
+                <p className="text-sm font-medium text-[#6e6e73]">{t.dataFlow}</p>
                 <p className="text-2xl font-semibold tracking-normal text-[#1d1d1f]">
-                  Single Source
+                  {t.singleSource}
                 </p>
               </div>
             </div>
             <div className="mt-5 grid gap-3">
               <div className={`${softPanelClass} p-4 text-sm leading-6 text-[#6e6e73]`}>
-                Profile 保存到 Local Storage，页面切换、刷新、关闭浏览器后都会恢复。
+                {t.localStorageNote}
               </div>
               <div className={`${softPanelClass} p-4 text-sm leading-6 text-[#6e6e73]`}>
-                Course Planner 会读取这里的 GPA、已完成课程和学习强度，再调用规则引擎。
+                {t.plannerNote}
               </div>
             </div>
           </div>
@@ -369,28 +383,28 @@ export default function AcademicProfilePage() {
                 <CalendarDays className="h-5 w-5" aria-hidden="true" />
               </span>
               <div>
-                <p className="text-sm font-medium text-[#6e6e73]">Next Step</p>
+                <p className="text-sm font-medium text-[#6e6e73]">{t.nextStep}</p>
                 <p className="text-xl font-semibold tracking-normal text-[#1d1d1f]">
-                  Generate Course Plan
+                  {t.generateCoursePlan}
                 </p>
               </div>
             </div>
             <p className="mt-4 border-t border-[#e5e5ea] pt-4 text-sm leading-6 text-[#6e6e73]">
-              保存后可以直接去 Course Planner，不需要重复输入 GPA 或已完成课程。
+              {t.nextStepDescription}
             </p>
             <Link
               href="/course-planner"
               className="mt-4 inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-lg border border-[#e5e5ea] bg-white px-4 text-sm font-semibold text-[#1d1d1f] transition hover:bg-[#f5f5f7]"
             >
               <BookOpen className="h-4 w-4" aria-hidden="true" />
-              Open Course Planner
+              {t.openCoursePlanner}
             </Link>
           </div>
 
-          {savedMessage ? (
+          {hasSaved ? (
             <div className="rounded-lg border border-[#bbf7d0] bg-[#f0fdf4] p-4 text-sm font-medium leading-6 text-[#166534]">
               <CheckCircle2 className="mr-2 inline h-4 w-4" aria-hidden="true" />
-              {savedMessage}
+              {t.savedMessage}
             </div>
           ) : null}
 
@@ -399,7 +413,7 @@ export default function AcademicProfilePage() {
             className="inline-flex min-h-12 w-full items-center justify-center gap-2 rounded-lg bg-[#51247a] px-4 text-sm font-semibold text-white transition hover:bg-[#3f1c62]"
           >
             <Save className="h-4 w-4" aria-hidden="true" />
-            Save Academic Profile
+            {t.saveButton}
           </button>
         </aside>
       </form>
