@@ -1,31 +1,31 @@
 import { LegalPage } from "@/components/LegalPage";
 
 export const metadata = {
-  title: "About | GHC Academic Planner"
+  title: "About | GradPlan"
 };
 
 export default function AboutPage() {
   return (
     <LegalPage
       eyebrow="About"
-      title="About GHC Academic Planner"
-      intro="GHC Academic Planner is a student-built academic planning tool for UQ Economics students."
+      title="About GradPlan"
+      intro="GradPlan is an independent academic planning platform designed to help university students plan their degree more efficiently."
       metadata
       sections={[
         {
-          title: "What this product does",
+          title: "Current Beta focus",
           items: [
-            "This website is independently developed by a UQ Economics student.",
-            "The goal is to help students plan courses, calculate GPA, and check graduation requirements in one place.",
-            "The product is currently in Beta. Features, data, and workflows will continue to improve based on user feedback."
+            "The current Beta focuses on University of Queensland students.",
+            "The first supported program is Bachelor of Economics.",
+            "Future versions will support more universities, programs, and planning workflows."
           ]
         },
         {
-          title: "Important context",
+          title: "Mission",
           items: [
-            "This website is not an official University of Queensland product.",
-            "It is not affiliated with, endorsed by, or operated by The University of Queensland.",
-            "Users are welcome to share feedback, suggestions, and corrections so the planner can become more useful."
+            "Make academic planning simple.",
+            "GradPlan helps students plan semesters, track graduation progress, calculate GPA, and build a degree roadmap.",
+            "GradPlan is built independently and is currently in Beta. Feedback and corrections are welcome."
           ]
         }
       ]}

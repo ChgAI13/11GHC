@@ -31,9 +31,17 @@ const progressCircle = {
 const copy = {
   zh: {
     university: "University of Queensland",
-    title: "UQ Academic Planner",
-    intro: "为 UQ 经济学学士学生设计的学业规划工作台。集中查看 GPA、课程进度、毕业要求和下一步选课方向。",
-    programLabel: "当前项目",
+    heroBadge: "Academic Planning Platform",
+    title: "GradPlan",
+    intro:
+      "帮助大学生规划每个学期、追踪毕业进度、计算 GPA，并构建完整 Degree Roadmap。当前 Beta 先支持 UQ Bachelor of Economics。",
+    heroHighlights: [
+      "Plan Every Semester",
+      "Track Graduation Progress",
+      "Calculate GPA",
+      "Build Your Degree Roadmap"
+    ],
+    programLabel: "当前支持项目",
     program: "Bachelor of Economics",
     cohort: "2026 学业规划视图",
     stats: [
@@ -80,10 +88,17 @@ const copy = {
   },
   en: {
     university: "University of Queensland",
-    title: "UQ Academic Planner",
+    heroBadge: "Academic Planning Platform",
+    title: "GradPlan",
     intro:
-      "A focused academic planning workspace for UQ Bachelor of Economics students. Track GPA, course progress, graduation requirements, and next course decisions.",
-    programLabel: "Current program",
+      "Plan every semester, track graduation progress, calculate GPA, and build a complete degree roadmap. The current Beta focuses on UQ Bachelor of Economics.",
+    heroHighlights: [
+      "Plan Every Semester",
+      "Track Graduation Progress",
+      "Calculate GPA",
+      "Build Your Degree Roadmap"
+    ],
+    programLabel: "Current supported program",
     program: "Bachelor of Economics",
     cohort: "2026 planning view",
     stats: [
@@ -355,7 +370,7 @@ export default function DashboardPage() {
             <div>
               <div className="inline-flex items-center gap-2 rounded-full border border-[#e5e5ea] bg-white px-3 py-1.5 text-sm font-medium text-[#6e6e73]">
                 <GraduationCap className="h-4 w-4 text-[#51247a]" aria-hidden="true" />
-                {profile.university}
+                {t.heroBadge}
               </div>
               <h1 className="mt-6 max-w-3xl text-4xl font-semibold leading-tight tracking-normal text-[#1d1d1f] sm:text-6xl">
                 {t.title}
@@ -363,6 +378,17 @@ export default function DashboardPage() {
               <p className="mt-4 max-w-2xl text-base leading-7 text-[#6e6e73] sm:text-lg">
                 {t.intro}
               </p>
+              <div className="mt-5 grid max-w-2xl gap-2 sm:grid-cols-2">
+                {t.heroHighlights.map((item) => (
+                  <div
+                    key={item}
+                    className="inline-flex items-center gap-2 rounded-full border border-[#e5e5ea] bg-[#fbfbfd] px-3 py-2 text-sm font-semibold text-[#1d1d1f]"
+                  >
+                    <CheckCircle2 className="h-4 w-4 text-[#51247a]" aria-hidden="true" />
+                    <span>{item}</span>
+                  </div>
+                ))}
+              </div>
             </div>
 
             <div className={`${panelClass} p-5`}>
@@ -373,7 +399,7 @@ export default function DashboardPage() {
               <div className="mt-5 flex items-center justify-between gap-3 border-t border-[#e5e5ea] pt-4">
                 <span className="text-sm font-medium text-[#86868b]">{t.cohort}</span>
                 <span className="rounded-full border border-[#e5e5ea] bg-[#fbfbfd] px-3 py-1 text-xs font-semibold text-[#51247a]">
-                  UQ
+                  {profile.university}
                 </span>
               </div>
             </div>
@@ -510,7 +536,7 @@ export default function DashboardPage() {
                   <p className="text-4xl font-semibold tracking-normal text-[#1d1d1f]">
                     {degreePercent}%
                   </p>
-                  <p className="mt-1 text-xs font-semibold text-[#86868b]">UQ BEcon</p>
+                  <p className="mt-1 text-xs font-semibold text-[#86868b]">Degree roadmap</p>
                 </div>
               </div>
             </div>

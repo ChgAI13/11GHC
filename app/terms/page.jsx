@@ -1,7 +1,7 @@
 import { LegalPage } from "@/components/LegalPage";
 
 export const metadata = {
-  title: "Terms of Use | GHC Academic Planner"
+  title: "Terms of Use | GradPlan"
 };
 
 export default function TermsPage() {
@@ -9,7 +9,7 @@ export default function TermsPage() {
     <LegalPage
       eyebrow="Terms"
       title="Terms of Use"
-      intro="These terms describe the basic rules for using GHC Academic Planner."
+      intro="These terms describe the basic rules for using GradPlan."
       sections={[
         {
           title: "Use of the website",

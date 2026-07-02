@@ -4,8 +4,8 @@ import { LanguageProvider } from "@/components/LanguageProvider";
 import { ProfileProvider } from "@/components/ProfileProvider";
 
 export const metadata = {
-  title: "UQ Academic Planner",
-  description: "Academic planning dashboard for University of Queensland students"
+  title: "GradPlan",
+  description: "Academic planning platform for university students"
 };
 
 export default function RootLayout({ children }) {

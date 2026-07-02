@@ -7,6 +7,7 @@ import {
   ClipboardCheck,
   Database,
   Gauge,
+  GraduationCap,
   LayoutDashboard,
   RotateCcw,
   Settings
@@ -32,15 +33,17 @@ const footerLinks = [
 
 const copy = {
   zh: {
-    brand: "UQ Academic Planner",
-    subtitle: "经济学学士 MVP",
+    brand: "GradPlan",
+    subtitle: "Plan Your Degree with Confidence.",
     settings: "Profile",
     comingSoon: "暂未开放",
     resetAllData: "Reset All Data",
-    footerBuiltBy: "Built by a UQ Economics student.",
-    footerUnofficial: "Unofficial tool. Not affiliated with The University of Queensland.",
+    footerBrand: "GradPlan Beta",
+    footerBuiltBy: "Built independently by a university student.",
+    footerUnofficial: "Unofficial academic planning platform.",
+    footerNotAffiliated: "Not affiliated with The University of Queensland.",
     footerBetaWarning:
-      "⚠️ Beta Version — Please verify all academic decisions with official UQ resources before enrolling in courses.",
+      "Beta Version — Please verify all academic decisions with official UQ resources before enrolling in courses.",
     resetConfirm:
       "确定要清空 Academic Profile 吗？Dashboard、GPA、Course Planner 和 Graduation Checker 会同步重置。",
     nav: {
@@ -52,15 +55,17 @@ const copy = {
     }
   },
   en: {
-    brand: "UQ Academic Planner",
-    subtitle: "Bachelor of Economics MVP",
+    brand: "GradPlan",
+    subtitle: "Plan Your Degree with Confidence.",
     settings: "Profile",
     comingSoon: "Coming soon",
     resetAllData: "Reset All Data",
-    footerBuiltBy: "Built by a UQ Economics student.",
-    footerUnofficial: "Unofficial tool. Not affiliated with The University of Queensland.",
+    footerBrand: "GradPlan Beta",
+    footerBuiltBy: "Built independently by a university student.",
+    footerUnofficial: "Unofficial academic planning platform.",
+    footerNotAffiliated: "Not affiliated with The University of Queensland.",
     footerBetaWarning:
-      "⚠️ Beta Version — Please verify all academic decisions with official UQ resources before enrolling in courses.",
+      "Beta Version — Please verify all academic decisions with official UQ resources before enrolling in courses.",
     resetConfirm:
       "Clear Academic Profile? Dashboard, GPA Planner, Course Planner, and Graduation Checker will reset together.",
     nav: {
@@ -184,8 +189,10 @@ function AppFooter({ pathname, t }) {
     <footer className="mx-auto w-full max-w-7xl border-t border-[#e5e5ea] px-4 py-8 text-sm text-[#6e6e73] dark:border-[#2c2c2e] dark:text-[#c7c7cc] sm:px-6">
       {showHomeDisclaimer ? (
         <div className="mb-5 grid gap-1">
-          <p className="font-semibold text-[#1d1d1f] dark:text-white">{t.footerBuiltBy}</p>
+          <p className="font-semibold text-[#1d1d1f] dark:text-white">{t.footerBrand}</p>
+          <p>{t.footerBuiltBy}</p>
           <p>{t.footerUnofficial}</p>
+          <p>{t.footerNotAffiliated}</p>
           <p className="text-xs leading-5 text-[#86868b] dark:text-[#a1a1a6]">
             {t.footerBetaWarning}
           </p>
@@ -221,14 +228,14 @@ export function AppShell({ children }) {
       <div className="lg:grid lg:min-h-screen lg:grid-cols-[280px_1fr]">
         <aside className="sticky top-0 hidden h-screen border-r border-[#e5e5ea] bg-white px-4 py-5 dark:border-[#2c2c2e] dark:bg-[#111113] lg:flex lg:flex-col">
           <Link href="/" className="flex items-center gap-3 px-2" aria-label="Dashboard">
-            <span className="grid h-10 w-10 place-items-center rounded-lg bg-[#51247a] text-sm font-black text-white shadow-[0_1px_2px_rgba(0,0,0,0.08)]">
-              UQ
+            <span className="grid h-10 w-10 place-items-center rounded-xl bg-[#51247a] text-white shadow-[0_1px_2px_rgba(0,0,0,0.08)]">
+              <GraduationCap className="h-5 w-5" aria-hidden="true" />
             </span>
             <span className="min-w-0">
-              <span className="block text-sm font-black leading-tight text-[#1d1d1f]">
+              <span className="block text-sm font-black leading-tight text-[#1d1d1f] dark:text-white">
                 {t.brand}
               </span>
-              <span className="block truncate text-xs font-medium text-[#6e6e73]">
+              <span className="block truncate text-xs font-medium text-[#6e6e73] dark:text-[#c7c7cc]">
                 {t.subtitle}
               </span>
             </span>
@@ -260,14 +267,14 @@ export function AppShell({ children }) {
           <header className="sticky top-0 z-20 border-b border-[#e5e5ea] bg-white/90 backdrop-blur-xl lg:hidden">
             <div className="flex items-center justify-between gap-4 px-4 py-3">
               <Link href="/" className="flex items-center gap-3" aria-label="Dashboard">
-                <span className="grid h-10 w-10 place-items-center rounded-lg bg-[#51247a] text-sm font-black text-white shadow-[0_1px_2px_rgba(0,0,0,0.08)]">
-                  UQ
+                <span className="grid h-10 w-10 place-items-center rounded-xl bg-[#51247a] text-white shadow-[0_1px_2px_rgba(0,0,0,0.08)]">
+                  <GraduationCap className="h-5 w-5" aria-hidden="true" />
                 </span>
                 <span className="min-w-0">
-                  <span className="block text-sm font-black leading-tight text-[#1d1d1f]">
+                  <span className="block text-sm font-black leading-tight text-[#1d1d1f] dark:text-white">
                     {t.brand}
                   </span>
-                  <span className="block truncate text-xs font-medium text-[#6e6e73]">
+                  <span className="block truncate text-xs font-medium text-[#6e6e73] dark:text-[#c7c7cc]">
                     {t.subtitle}
                   </span>
                 </span>

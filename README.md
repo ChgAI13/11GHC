@@ -1,12 +1,23 @@
-# UQ Academic Planner
+# GradPlan
 
-一个面向 University of Queensland 本科学生的 Academic Planning MVP。第一版先服务 Bachelor of Economics 学生，当前首页为 Dashboard，使用 Mock Data。
+GradPlan 是一个 Academic Planning Platform，帮助大学生规划学期课程、追踪毕业进度、计算 GPA，并建立完整的 Degree Roadmap。
+
+当前 Beta 版本先支持：
+
+- Supported University: University of Queensland
+- Supported Program: Bachelor of Economics
 
 ## 功能
 
 - Dashboard：展示 Current GPA、Target GPA、Completed Courses、Remaining Courses、Academic Progress 和 Recommended Next Actions。
-- 后续扩展方向：GPA Planner、Course Planner、Graduation Checker、Course Database。
+- Profile：统一保存 Academic Profile。
+- GPA Planner：规划目标 GPA。
+- Degree Planner：模拟 6 个学期的课程路径。
+- Graduation Checker：检查毕业要求完成度。
+- Course Database：搜索和查看课程信息。
 - 当前版本没有登录系统、数据库和真实支付。
+
+GradPlan 是独立开发的非官方工具，不属于 The University of Queensland。
 
 ## 运行
 

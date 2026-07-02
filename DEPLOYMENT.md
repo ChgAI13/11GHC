@@ -1,4 +1,4 @@
-# 部署到 GitHub + Vercel
+# GradPlan 部署到 GitHub + Vercel
 
 ## 1. 本地检查
 
@@ -14,7 +14,7 @@ pnpm build
 先在 GitHub 创建一个空仓库，例如：
 
 ```text
-au-student-ai-assistant
+gradplan
 ```
 
 然后在项目目录运行：
@@ -22,9 +22,9 @@ au-student-ai-assistant
 ```bash
 git init
 git add .
-git commit -m "Initial MVP"
+git commit -m "Initial GradPlan MVP"
 git branch -M main
-git remote add origin https://github.com/YOUR_USERNAME/au-student-ai-assistant.git
+git remote add origin https://github.com/YOUR_USERNAME/gradplan.git
 git push -u origin main
 ```
 
@@ -35,7 +35,7 @@ git push -u origin main
 1. 打开 https://vercel.com
 2. 使用 GitHub 账号登录
 3. 点击 `Add New...` -> `Project`
-4. 选择 `au-student-ai-assistant` 仓库
+4. 选择 `gradplan` 仓库
 5. Framework Preset 选择 `Next.js`
 6. Build Command 保持 `pnpm build`
 7. Install Command 保持 `pnpm install`
@@ -44,7 +44,7 @@ git push -u origin main
 部署完成后，Vercel 会生成一个公开网址，格式通常类似：
 
 ```text
-https://au-student-ai-assistant.vercel.app
+https://gradplan.vercel.app
 ```
 
 ## 4. 可选：用 Vercel CLI 直接部署
