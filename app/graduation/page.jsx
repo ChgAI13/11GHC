@@ -14,7 +14,7 @@ import {
   UserRound
 } from "lucide-react";
 import { uqBachelorOfEconomicsCourses } from "@/data/courses";
-import { uqBachelorOfEconomicsGraduationRules } from "@/data/graduationRules";
+import { uqBachelorOfEconomics2026ProgramRule } from "@/data/programRules";
 import { checkGraduation } from "@/lib/graduationChecker";
 import {
   recommendCourses,
@@ -109,7 +109,7 @@ export default function GraduationCheckerPage() {
       checkGraduation(
         profile,
         uqBachelorOfEconomicsCourses,
-        uqBachelorOfEconomicsGraduationRules
+        uqBachelorOfEconomics2026ProgramRule
       ),
     [profile]
   );

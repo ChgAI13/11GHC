@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 import { uqBachelorOfEconomicsCourses } from "../data/courses.ts";
-import { uqBachelorOfEconomicsGraduationRules } from "../data/graduationRules.ts";
+import { uqBachelorOfEconomics2026ProgramRule } from "../data/programRules.ts";
 import { checkGraduation } from "./graduationChecker.ts";
 import { DEFAULT_ACADEMIC_PROFILE } from "./profile.ts";
 
@@ -13,7 +13,7 @@ test("checks completed and remaining graduation requirements", () => {
       completedCourses: ["ECON1010", "ECON1020", "ECON1050", "ECON1310"]
     },
     uqBachelorOfEconomicsCourses,
-    uqBachelorOfEconomicsGraduationRules
+    uqBachelorOfEconomics2026ProgramRule
   );
 
   assert.equal(result.totalCompletedUnits, 8);
@@ -25,21 +25,31 @@ test("checks completed and remaining graduation requirements", () => {
     )
   );
   assert.ok(result.missingCourses.some((course) => course.code === "ECON2010"));
+  assert.ok(result.missingCourses.some((course) => course.code === "ECON2101"));
 });
 
-test("marks requirements as completed when enough matching units exist", () => {
+test("marks flexible core as completed when enough official flexible core units exist", () => {
   const result = checkGraduation(
     {
       ...DEFAULT_ACADEMIC_PROFILE,
-      completedCourses: ["ECON1200", "CHIN2600"]
+      completedCourses: [
+        "ECON1200",
+        "ECON2030",
+        "ECON2040",
+        "ECON2050",
+        "ECON2060",
+        "ECON2070",
+        "ECON2102",
+        "ECON2103"
+      ]
     },
     uqBachelorOfEconomicsCourses,
-    uqBachelorOfEconomicsGraduationRules
+    uqBachelorOfEconomics2026ProgramRule
   );
 
   assert.ok(
     result.completedRequirements.some(
-      (requirement) => requirement.key === "electives"
+      (requirement) => requirement.key === "flexible-core"
     )
   );
 });
@@ -51,7 +61,7 @@ test("reports prerequisite warnings for inconsistent completed courses", () => {
       completedCourses: ["ECON2010"]
     },
     uqBachelorOfEconomicsCourses,
-    uqBachelorOfEconomicsGraduationRules
+    uqBachelorOfEconomics2026ProgramRule
   );
 
   assert.ok(

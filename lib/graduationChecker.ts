@@ -3,7 +3,15 @@ import type {
   GraduationRequirement,
   GraduationRules
 } from "../data/graduationRules.ts";
+import type {
+  ProgramCourseReference,
+  ProgramRequirement,
+  ProgramRule
+} from "../data/programRules.ts";
 import type { AcademicProfile } from "./profile.ts";
+
+type GraduationRequirementInput = GraduationRequirement | ProgramRequirement;
+type GraduationRuleInput = GraduationRules | ProgramRule;
 
 export interface RequirementStatus {
   key: string;
@@ -60,6 +68,53 @@ function uniqueCourses(courses: Course[]): Course[] {
   });
 }
 
+function hasProgramRequirements(rules: GraduationRuleInput): rules is ProgramRule {
+  return "graduationRequirements" in rules;
+}
+
+function getGraduationRequirements(rules: GraduationRuleInput): GraduationRequirementInput[] {
+  return hasProgramRequirements(rules) ? rules.graduationRequirements : rules.requirements;
+}
+
+function toCourseFromProgramReference(courseReference: ProgramCourseReference): Course {
+  return {
+    code: courseReference.courseCode,
+    name: courseReference.courseName,
+    units: courseReference.units,
+    level: courseReference.level,
+    category: courseReference.category,
+    difficulty: 3,
+    mathIntensity: 3,
+    examWeight: 0,
+    assignmentWeight: 0,
+    groupWork: false,
+    prerequisites: [],
+    semester: "Both",
+    description: `${courseReference.courseName} is listed in the official program rule.`
+  };
+}
+
+function buildCourseCatalog(courses: Course[], rules: GraduationRuleInput): Course[] {
+  const catalog = new Map(courses.map((course) => [course.code, course]));
+
+  getGraduationRequirements(rules).forEach((requirement) => {
+    if (!("courses" in requirement) || !requirement.courses) {
+      return;
+    }
+
+    requirement.courses.forEach((courseReference) => {
+      if (!catalog.has(courseReference.courseCode)) {
+        catalog.set(
+          courseReference.courseCode,
+          toCourseFromProgramReference(courseReference)
+        );
+      }
+    });
+  });
+
+  return [...catalog.values()];
+}
+
 function getCompletedCourses(courses: Course[], completedCourseCodes: Set<string>) {
   return courses.filter((course) => completedCourseCodes.has(course.code));
 }
@@ -87,7 +142,7 @@ function getMissingCoursesForUnits(candidates: Course[], completedCourseCodes: S
 }
 
 function evaluateCourseListRequirement(
-  requirement: GraduationRequirement,
+  requirement: GraduationRequirementInput,
   courses: Course[],
   completedCourseCodes: Set<string>
 ): RequirementStatus {
@@ -115,7 +170,7 @@ function evaluateCourseListRequirement(
 }
 
 function evaluateCategoryRequirement(
-  requirement: GraduationRequirement,
+  requirement: GraduationRequirementInput,
   courses: Course[],
   completedCourseCodes: Set<string>
 ): RequirementStatus {
@@ -141,7 +196,7 @@ function evaluateCategoryRequirement(
 }
 
 function evaluateLevelRequirement(
-  requirement: GraduationRequirement,
+  requirement: GraduationRequirementInput,
   courses: Course[],
   completedCourseCodes: Set<string>
 ): RequirementStatus {
@@ -166,8 +221,41 @@ function evaluateLevelRequirement(
   };
 }
 
+function evaluateLevelMaximumRequirement(
+  requirement: GraduationRequirementInput,
+  courses: Course[],
+  completedCourseCodes: Set<string>
+): RequirementStatus {
+  const levels = new Set(requirement.levels ?? []);
+  const candidateCourses = courses.filter((course) => levels.has(course.level));
+  const completedCourses = candidateCourses.filter((course) =>
+    completedCourseCodes.has(course.code)
+  );
+  const completedUnits = sumUnits(completedCourses);
+  const maximumUnits =
+    "maxUnits" in requirement && requirement.maxUnits
+      ? requirement.maxUnits
+      : requirement.requiredUnits;
+  const excessUnits = Math.max(completedUnits - maximumUnits, 0);
+
+  return {
+    key: requirement.key,
+    label: requirement.label,
+    description: requirement.description,
+    completedUnits,
+    requiredUnits: maximumUnits,
+    missingUnits: excessUnits,
+    progress:
+      excessUnits === 0
+        ? 100
+        : Math.max(0, Math.round((maximumUnits / completedUnits) * 100)),
+    completedCourses,
+    missingCourses: []
+  };
+}
+
 function evaluateTotalUnitsRequirement(
-  requirement: GraduationRequirement,
+  requirement: GraduationRequirementInput,
   completedCourses: Course[]
 ): RequirementStatus {
   const completedUnits = sumUnits(completedCourses);
@@ -186,7 +274,7 @@ function evaluateTotalUnitsRequirement(
 }
 
 function evaluateRequirement(
-  requirement: GraduationRequirement,
+  requirement: GraduationRequirementInput,
   courses: Course[],
   completedCourses: Course[],
   completedCourseCodes: Set<string>
@@ -201,6 +289,10 @@ function evaluateRequirement(
 
   if (requirement.type === "level-units") {
     return evaluateLevelRequirement(requirement, courses, completedCourseCodes);
+  }
+
+  if (requirement.type === "level-units-max") {
+    return evaluateLevelMaximumRequirement(requirement, courses, completedCourseCodes);
   }
 
   return evaluateTotalUnitsRequirement(requirement, completedCourses);
@@ -225,12 +317,13 @@ export function findPrerequisiteWarnings(courses: Course[], completedCourseCodes
 export function checkGraduation(
   profile: AcademicProfile,
   courses: Course[],
-  rules: GraduationRules
+  rules: GraduationRuleInput
 ): GraduationCheckResult {
   const completedCourseCodes = normalizeCourseCodes(profile.completedCourses);
-  const completedCourses = getCompletedCourses(courses, completedCourseCodes);
-  const requirementStatuses = rules.requirements.map((requirement) =>
-    evaluateRequirement(requirement, courses, completedCourses, completedCourseCodes)
+  const courseCatalog = buildCourseCatalog(courses, rules);
+  const completedCourses = getCompletedCourses(courseCatalog, completedCourseCodes);
+  const requirementStatuses = getGraduationRequirements(rules).map((requirement) =>
+    evaluateRequirement(requirement, courseCatalog, completedCourses, completedCourseCodes)
   );
   const completedRequirements = requirementStatuses.filter(
     (requirement) => requirement.missingUnits === 0
@@ -260,7 +353,7 @@ export function checkGraduation(
     missingUnits: Math.max(totalRequiredUnits - totalCompletedUnits, 0),
     totalCompletedUnits,
     totalRequiredUnits,
-    prerequisiteWarnings: findPrerequisiteWarnings(courses, completedCourseCodes),
+    prerequisiteWarnings: findPrerequisiteWarnings(courseCatalog, completedCourseCodes),
     requirementStatuses
   };
 }
