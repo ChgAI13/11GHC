@@ -1,17 +1,10 @@
 import type { Course } from "../data/courses.ts";
 import type {
-  GraduationRequirement,
-  GraduationRules
-} from "../data/graduationRules.ts";
-import type {
   ProgramCourseReference,
   ProgramRequirement,
   ProgramRule
 } from "../data/programRules.ts";
 import type { AcademicProfile } from "./profile.ts";
-
-type GraduationRequirementInput = GraduationRequirement | ProgramRequirement;
-type GraduationRuleInput = GraduationRules | ProgramRule;
 
 export interface RequirementStatus {
   key: string;
@@ -68,14 +61,6 @@ function uniqueCourses(courses: Course[]): Course[] {
   });
 }
 
-function hasProgramRequirements(rules: GraduationRuleInput): rules is ProgramRule {
-  return "graduationRequirements" in rules;
-}
-
-function getGraduationRequirements(rules: GraduationRuleInput): GraduationRequirementInput[] {
-  return hasProgramRequirements(rules) ? rules.graduationRequirements : rules.requirements;
-}
-
 function toCourseFromProgramReference(courseReference: ProgramCourseReference): Course {
   return {
     code: courseReference.courseCode,
@@ -94,11 +79,11 @@ function toCourseFromProgramReference(courseReference: ProgramCourseReference): 
   };
 }
 
-function buildCourseCatalog(courses: Course[], rules: GraduationRuleInput): Course[] {
+function buildCourseCatalog(courses: Course[], rules: ProgramRule): Course[] {
   const catalog = new Map(courses.map((course) => [course.code, course]));
 
-  getGraduationRequirements(rules).forEach((requirement) => {
-    if (!("courses" in requirement) || !requirement.courses) {
+  rules.graduationRequirements.forEach((requirement) => {
+    if (!requirement.courses) {
       return;
     }
 
@@ -142,7 +127,7 @@ function getMissingCoursesForUnits(candidates: Course[], completedCourseCodes: S
 }
 
 function evaluateCourseListRequirement(
-  requirement: GraduationRequirementInput,
+  requirement: ProgramRequirement,
   courses: Course[],
   completedCourseCodes: Set<string>
 ): RequirementStatus {
@@ -170,7 +155,7 @@ function evaluateCourseListRequirement(
 }
 
 function evaluateCategoryRequirement(
-  requirement: GraduationRequirementInput,
+  requirement: ProgramRequirement,
   courses: Course[],
   completedCourseCodes: Set<string>
 ): RequirementStatus {
@@ -196,7 +181,7 @@ function evaluateCategoryRequirement(
 }
 
 function evaluateLevelRequirement(
-  requirement: GraduationRequirementInput,
+  requirement: ProgramRequirement,
   courses: Course[],
   completedCourseCodes: Set<string>
 ): RequirementStatus {
@@ -222,7 +207,7 @@ function evaluateLevelRequirement(
 }
 
 function evaluateLevelMaximumRequirement(
-  requirement: GraduationRequirementInput,
+  requirement: ProgramRequirement,
   courses: Course[],
   completedCourseCodes: Set<string>
 ): RequirementStatus {
@@ -232,10 +217,7 @@ function evaluateLevelMaximumRequirement(
     completedCourseCodes.has(course.code)
   );
   const completedUnits = sumUnits(completedCourses);
-  const maximumUnits =
-    "maxUnits" in requirement && requirement.maxUnits
-      ? requirement.maxUnits
-      : requirement.requiredUnits;
+  const maximumUnits = requirement.maxUnits ?? requirement.requiredUnits;
   const excessUnits = Math.max(completedUnits - maximumUnits, 0);
 
   return {
@@ -255,7 +237,7 @@ function evaluateLevelMaximumRequirement(
 }
 
 function evaluateTotalUnitsRequirement(
-  requirement: GraduationRequirementInput,
+  requirement: ProgramRequirement,
   completedCourses: Course[]
 ): RequirementStatus {
   const completedUnits = sumUnits(completedCourses);
@@ -274,7 +256,7 @@ function evaluateTotalUnitsRequirement(
 }
 
 function evaluateRequirement(
-  requirement: GraduationRequirementInput,
+  requirement: ProgramRequirement,
   courses: Course[],
   completedCourses: Course[],
   completedCourseCodes: Set<string>
@@ -317,12 +299,12 @@ export function findPrerequisiteWarnings(courses: Course[], completedCourseCodes
 export function checkGraduation(
   profile: AcademicProfile,
   courses: Course[],
-  rules: GraduationRuleInput
+  rules: ProgramRule
 ): GraduationCheckResult {
   const completedCourseCodes = normalizeCourseCodes(profile.completedCourses);
   const courseCatalog = buildCourseCatalog(courses, rules);
   const completedCourses = getCompletedCourses(courseCatalog, completedCourseCodes);
-  const requirementStatuses = getGraduationRequirements(rules).map((requirement) =>
+  const requirementStatuses = rules.graduationRequirements.map((requirement) =>
     evaluateRequirement(requirement, courseCatalog, completedCourses, completedCourseCodes)
   );
   const completedRequirements = requirementStatuses.filter(

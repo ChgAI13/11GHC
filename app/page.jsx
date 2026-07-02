@@ -16,7 +16,7 @@ import Link from "next/link";
 import { useLanguage } from "@/components/LanguageProvider";
 import { useProfile } from "@/components/ProfileProvider";
 import { uqBachelorOfEconomicsCourses } from "@/data/courses";
-import { uqBachelorOfEconomicsGraduationRules } from "@/data/graduationRules";
+import { getProgramRuleForProfile } from "@/data/programRules";
 import { checkGraduation } from "@/lib/graduationChecker";
 import {
   recommendCourses,
@@ -183,14 +183,15 @@ export default function DashboardPage() {
   const { language } = useLanguage();
   const { profile, academicProgress } = useProfile();
   const t = copy[language];
+  const programRule = useMemo(() => getProgramRuleForProfile(profile), [profile]);
   const graduationResult = useMemo(
     () =>
       checkGraduation(
         profile,
         uqBachelorOfEconomicsCourses,
-        uqBachelorOfEconomicsGraduationRules
+        programRule
       ),
-    [profile]
+    [profile, programRule]
   );
   const recommendationResult = useMemo(
     () =>

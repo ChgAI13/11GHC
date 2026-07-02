@@ -1,4 +1,4 @@
-import { uqBachelorOfEconomicsGraduationRules } from "../data/graduationRules.ts";
+import { getProgramRuleForProfile } from "../data/programRules.ts";
 import type { AcademicProfile } from "./profileStore.ts";
 
 export const STANDARD_COURSE_UNITS = 2;
@@ -15,7 +15,7 @@ export interface AcademicProgressSummary {
 export function calculateAcademicProgress(
   profile: AcademicProfile
 ): AcademicProgressSummary {
-  const totalUnits = uqBachelorOfEconomicsGraduationRules.totalUnits;
+  const totalUnits = getProgramRuleForProfile(profile).totalUnits;
   const completedCourseCount = profile.completedCourses.length;
   const completedUnits = completedCourseCount * STANDARD_COURSE_UNITS;
   const remainingUnits = Math.max(totalUnits - completedUnits, 0);

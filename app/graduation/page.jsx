@@ -14,7 +14,7 @@ import {
   UserRound
 } from "lucide-react";
 import { uqBachelorOfEconomicsCourses } from "@/data/courses";
-import { uqBachelorOfEconomics2026ProgramRule } from "@/data/programRules";
+import { getProgramRuleForProfile } from "@/data/programRules";
 import { checkGraduation } from "@/lib/graduationChecker";
 import {
   recommendCourses,
@@ -103,15 +103,16 @@ function RequirementPillList({ requirements, emptyText }) {
 
 export default function GraduationCheckerPage() {
   const { profile } = useProfile();
+  const programRule = useMemo(() => getProgramRuleForProfile(profile), [profile]);
 
   const graduationResult = useMemo(
     () =>
       checkGraduation(
         profile,
         uqBachelorOfEconomicsCourses,
-        uqBachelorOfEconomics2026ProgramRule
+        programRule
       ),
-    [profile]
+    [profile, programRule]
   );
 
   const recommendationResult = useMemo(

@@ -1,9 +1,11 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 import { uqBachelorOfEconomicsCourses } from "../data/courses.ts";
-import { uqBachelorOfEconomics2026ProgramRule } from "../data/programRules.ts";
+import { getProgramRule } from "../data/programRules.ts";
 import { checkGraduation } from "./graduationChecker.ts";
 import { DEFAULT_ACADEMIC_PROFILE } from "./profile.ts";
+
+const uqBachelorOfEconomics2026ProgramRule = getProgramRule("2467", 2026);
 
 test("checks completed and remaining graduation requirements", () => {
   const result = checkGraduation(
