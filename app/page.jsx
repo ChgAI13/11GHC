@@ -179,6 +179,89 @@ function QuickAction({ action, comingSoon }) {
   );
 }
 
+function RequirementProgressItem({ requirement, language }) {
+  const isMet = requirement.missingUnits === 0;
+  const isMaximumRule = requirement.key.includes("maximum");
+  const resultText = isMet
+    ? language === "zh"
+      ? "符合"
+      : "Met"
+    : language === "zh"
+      ? "待完成"
+      : "Pending";
+  const missingText = isMaximumRule
+    ? requirement.missingUnits > 0
+      ? language === "zh"
+        ? `超出 ${requirement.missingUnits} units`
+        : `${requirement.missingUnits} units over`
+      : language === "zh"
+        ? "边界内"
+        : "Within limit"
+    : requirement.missingUnits > 0
+      ? language === "zh"
+        ? `还差 ${requirement.missingUnits} units`
+        : `${requirement.missingUnits} units remaining`
+      : language === "zh"
+        ? "已完成"
+        : "Complete";
+  const missingCourseCodes = requirement.missingCourses
+    .slice(0, 5)
+    .map((course) => course.code)
+    .join(", ");
+
+  return (
+    <article className={`${softPanelClass} p-4`}>
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+        <div className="min-w-0">
+          <p className="text-base font-semibold text-[#1d1d1f]">{requirement.label}</p>
+          <p className="mt-1 text-sm leading-6 text-[#6e6e73]">{requirement.description}</p>
+        </div>
+        <span
+          className={`w-fit shrink-0 rounded-full border px-3 py-1 text-xs font-semibold ${
+            isMet
+              ? "border-[#bbf7d0] bg-[#f0fdf4] text-[#166534]"
+              : "border-[#fed7aa] bg-[#fff7ed] text-[#9a3412]"
+          }`}
+        >
+          {resultText}
+        </span>
+      </div>
+
+      <div className="mt-4 h-2 overflow-hidden rounded-full bg-[#e5e5ea]">
+        <div
+          className="h-full rounded-full bg-[#51247a]"
+          style={{ width: `${requirement.progress}%` }}
+        />
+      </div>
+
+      <div className="mt-4 grid gap-3 sm:grid-cols-3">
+        <div>
+          <p className="text-xs font-medium uppercase text-[#86868b]">
+            {language === "zh" ? "当前方案" : "Current plan"}
+          </p>
+          <p className="mt-1 text-sm font-semibold text-[#1d1d1f]">
+            {requirement.completedUnits}/{requirement.requiredUnits} units
+          </p>
+        </div>
+        <div>
+          <p className="text-xs font-medium uppercase text-[#86868b]">
+            {language === "zh" ? "结果" : "Result"}
+          </p>
+          <p className="mt-1 text-sm font-semibold text-[#1d1d1f]">{missingText}</p>
+        </div>
+        <div>
+          <p className="text-xs font-medium uppercase text-[#86868b]">
+            {language === "zh" ? "缺口课程" : "Missing courses"}
+          </p>
+          <p className="mt-1 text-sm font-semibold text-[#1d1d1f]">
+            {missingCourseCodes || (language === "zh" ? "无" : "None")}
+          </p>
+        </div>
+      </div>
+    </article>
+  );
+}
+
 export default function DashboardPage() {
   const { language } = useLanguage();
   const { profile, academicProgress } = useProfile();
@@ -238,22 +321,6 @@ export default function DashboardPage() {
     ...item,
     ...statValues[index]
   }));
-  const progressRequirementKeys = ["core-courses", "flexible-core", "level-3-minimum"];
-  const dashboardProgressItems = t.progressItems.map((item, index) => {
-    const requirement = graduationResult.requirementStatuses.find(
-      (status) => status.key === progressRequirementKeys[index]
-    );
-
-    if (!requirement) {
-      return item;
-    }
-
-    return {
-      ...item,
-      value: `${requirement.completedUnits} / ${requirement.requiredUnits} units`,
-      width: `${requirement.progress}%`
-    };
-  });
   const topRecommendation = recommendationResult.recommendedCourses[0]?.course.code;
   const dashboardActions =
     language === "zh"
@@ -339,17 +406,13 @@ export default function DashboardPage() {
             <div className="h-full rounded-full bg-[#51247a]" style={{ width: `${degreePercent}%` }} />
           </div>
 
-          <div className="mt-5 grid gap-3 md:grid-cols-3">
-            {dashboardProgressItems.map((item) => (
-              <div key={item.label} className={`${softPanelClass} p-4`}>
-                <div className="flex items-center justify-between gap-3">
-                  <p className="text-sm font-semibold text-[#1d1d1f]">{item.label}</p>
-                  <p className="text-sm font-medium text-[#6e6e73]">{item.value}</p>
-                </div>
-                <div className="mt-3 h-2 overflow-hidden rounded-full bg-[#e5e5ea]">
-                  <div className="h-full rounded-full bg-[#51247a]" style={{ width: item.width }} />
-                </div>
-              </div>
+          <div className="mt-5 grid gap-3 lg:grid-cols-2">
+            {graduationResult.requirementStatuses.map((requirement) => (
+              <RequirementProgressItem
+                key={requirement.key}
+                requirement={requirement}
+                language={language}
+              />
             ))}
           </div>
         </section>
