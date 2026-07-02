@@ -268,12 +268,20 @@ export function GpaGoalPlanner() {
             />
           </div>
 
-          <Link
-            href="/profile"
-            className="mt-6 inline-flex min-h-12 items-center justify-center rounded-lg border border-[#e5e5ea] bg-white px-4 text-sm font-semibold text-[#1d1d1f] transition hover:bg-[#f5f5f7]"
-          >
-            去 Academic Profile 修改数据
-          </Link>
+          <div className="mt-6 flex flex-col gap-3 sm:flex-row">
+            <Link
+              href="/course-planner"
+              className="inline-flex min-h-12 items-center justify-center rounded-lg bg-[#51247a] px-4 text-sm font-semibold text-white transition hover:bg-[#3f1c62]"
+            >
+              Generate Semester Plan
+            </Link>
+            <Link
+              href="/profile"
+              className="inline-flex min-h-12 items-center justify-center rounded-lg border border-[#e5e5ea] bg-white px-4 text-sm font-semibold text-[#1d1d1f] transition hover:bg-[#f5f5f7]"
+            >
+              去 Academic Profile 修改数据
+            </Link>
+          </div>
         </section>
 
         <aside className="grid gap-4 lg:sticky lg:top-24">

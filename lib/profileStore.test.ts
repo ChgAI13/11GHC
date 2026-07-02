@@ -46,3 +46,16 @@ test("keeps completed courses aligned with the latest course catalog", () => {
 
   assert.deepEqual(savedProfile.completedCourses, ["ECON1010", "ECON1020"]);
 });
+
+test("normalizes the six-semester degree plan", () => {
+  const savedProfile = saveProfile({
+    ...DEFAULT_ACADEMIC_PROFILE,
+    semesterPlan: [
+      { id: "semester-1", name: "Semester 1", courses: ["econ2010", "FAKE1000"] }
+    ]
+  });
+
+  assert.equal(savedProfile.semesterPlan.length, 6);
+  assert.deepEqual(savedProfile.semesterPlan[0].courses, ["ECON2010"]);
+  assert.deepEqual(savedProfile.semesterPlan[1].courses, []);
+});

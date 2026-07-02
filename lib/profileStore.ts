@@ -2,12 +2,19 @@ import { getBachelorOfEconomicsCourseCodes } from "../data/courses.ts";
 
 export type AcademicWorkload = "Light" | "Medium" | "Heavy";
 
+export interface PlannedSemester {
+  id: string;
+  name: string;
+  courses: string[];
+}
+
 export interface AcademicProfile {
   university: string;
   program: string;
   currentGpa: string;
   targetGpa: string;
   completedCourses: string[];
+  semesterPlan: PlannedSemester[];
   preferredWorkload: AcademicWorkload;
   expectedGraduationSemester: string;
 }
@@ -19,20 +26,34 @@ type AppStorage = {
 
 type ProfileSubscriber = (profile: AcademicProfile) => void;
 
+const STORAGE_KEY = "uq-academic-planner:persistence:v1";
+const VALID_WORKLOADS = new Set<AcademicWorkload>(["Light", "Medium", "Heavy"]);
+const subscribers = new Set<ProfileSubscriber>();
+const validCourseCodes = getBachelorOfEconomicsCourseCodes();
+
+export const DEFAULT_SEMESTER_PLAN: PlannedSemester[] = Array.from({ length: 6 }, (_, index) => ({
+  id: `semester-${index + 1}`,
+  name: `Semester ${index + 1}`,
+  courses: []
+}));
+
+function createDefaultSemesterPlan(): PlannedSemester[] {
+  return DEFAULT_SEMESTER_PLAN.map((semester) => ({
+    ...semester,
+    courses: []
+  }));
+}
+
 export const DEFAULT_ACADEMIC_PROFILE: AcademicProfile = {
   university: "University of Queensland",
   program: "Bachelor of Economics",
   currentGpa: "",
   targetGpa: "",
   completedCourses: [],
+  semesterPlan: createDefaultSemesterPlan(),
   preferredWorkload: "Medium",
   expectedGraduationSemester: ""
 };
-
-const STORAGE_KEY = "uq-academic-planner:persistence:v1";
-const VALID_WORKLOADS = new Set<AcademicWorkload>(["Light", "Medium", "Heavy"]);
-const subscribers = new Set<ProfileSubscriber>();
-const validCourseCodes = getBachelorOfEconomicsCourseCodes();
 
 let currentProfile = DEFAULT_ACADEMIC_PROFILE;
 let hasHydratedProfile = false;
@@ -78,6 +99,29 @@ function normalizeCourseCodes(courseCodes: unknown): string[] {
   ];
 }
 
+function normalizeSemesterPlan(semesterPlan: unknown): PlannedSemester[] {
+  const savedSemesters = Array.isArray(semesterPlan) ? semesterPlan : [];
+
+  return DEFAULT_SEMESTER_PLAN.map((defaultSemester, index) => {
+    const savedSemester =
+      savedSemesters.find(
+        (semester): semester is Partial<PlannedSemester> =>
+          typeof semester === "object" &&
+          semester !== null &&
+          "id" in semester &&
+          semester.id === defaultSemester.id
+      ) ??
+      (typeof savedSemesters[index] === "object" && savedSemesters[index] !== null
+        ? (savedSemesters[index] as Partial<PlannedSemester>)
+        : undefined);
+
+    return {
+      ...defaultSemester,
+      courses: normalizeCourseCodes(savedSemester?.courses)
+    };
+  });
+}
+
 function normalizeWorkload(workload: unknown): AcademicWorkload {
   return typeof workload === "string" && VALID_WORKLOADS.has(workload as AcademicWorkload)
     ? (workload as AcademicWorkload)
@@ -103,6 +147,7 @@ function normalizeProfile(profile: Partial<AcademicProfile> = {}): AcademicProfi
         ? profile.targetGpa.trim()
         : DEFAULT_ACADEMIC_PROFILE.targetGpa,
     completedCourses: normalizeCourseCodes(profile.completedCourses),
+    semesterPlan: normalizeSemesterPlan(profile.semesterPlan),
     preferredWorkload: normalizeWorkload(profile.preferredWorkload),
     expectedGraduationSemester:
       typeof profile.expectedGraduationSemester === "string"

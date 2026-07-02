@@ -379,6 +379,13 @@ export default function DashboardPage() {
               </div>
             ))}
           </div>
+          <Link
+            href="/course-planner"
+            className="mt-5 inline-flex min-h-12 w-full items-center justify-center gap-2 rounded-lg bg-[#51247a] px-4 text-sm font-semibold text-white transition hover:bg-[#3f1c62]"
+          >
+            {language === "zh" ? "Continue Planning" : "Continue Planning"}
+            <ChevronRight className="h-4 w-4" aria-hidden="true" />
+          </Link>
         </section>
       </div>
 

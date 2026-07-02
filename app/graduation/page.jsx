@@ -360,6 +360,13 @@ export default function GraduationCheckerPage() {
             这是基于 Mock total units 的剩余学分估算。真实版本会接入 UQ 官方 degree rules 和 course list。
           </p>
           <Link
+            href="/course-planner"
+            className="mt-4 inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-lg bg-[#51247a] px-4 text-sm font-semibold text-white transition hover:bg-[#3f1c62]"
+          >
+            <BookOpen className="h-4 w-4" aria-hidden="true" />
+            Fix My Degree
+          </Link>
+          <Link
             href="/profile"
             className="mt-4 inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-lg border border-[#e5e5ea] bg-white px-4 text-sm font-semibold text-[#1d1d1f] transition hover:bg-[#f5f5f7]"
           >

@@ -1,18 +1,27 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 import Link from "next/link";
 import {
   AlertTriangle,
+  ArrowDown,
+  ArrowUp,
   BookOpen,
   CheckCircle2,
   ClipboardList,
   GraduationCap,
+  Plus,
   Sparkles,
   Target,
+  Trash2,
   UserRound
 } from "lucide-react";
-import { uqBachelorOfEconomicsCourses } from "@/data/courses";
+import {
+  getBachelorOfEconomicsCourse,
+  uqBachelorOfEconomicsCourses
+} from "@/data/courses";
+import { getProgramRuleForProfile } from "@/data/programRules";
+import { checkGraduation } from "@/lib/graduationChecker";
 import {
   recommendCourses,
   uqBachelorOfEconomicsProgram
@@ -21,426 +30,487 @@ import { useProfile } from "@/components/ProfileProvider";
 
 const panelClass = "rounded-lg border border-[#e5e5ea] bg-white shadow-[0_1px_2px_rgba(0,0,0,0.04)]";
 const softPanelClass = "rounded-lg border border-[#e5e5ea] bg-[#fbfbfd]";
+const controlClass =
+  "min-h-11 rounded-lg border border-[#e5e5ea] bg-white px-3 text-sm font-semibold text-[#1d1d1f] outline-none transition focus:border-[#51247a] focus:ring-4 focus:ring-[#51247a]/10";
+
+function uniqueCourseCodes(courseCodes) {
+  return [...new Set(courseCodes.map((courseCode) => courseCode.trim().toUpperCase()).filter(Boolean))];
+}
 
 function formatCourseMeta(course) {
   return `Level ${course.level} · ${course.units} units · ${course.category}`;
 }
 
-function getProfileIssues(profile) {
-  const currentGpaValue = Number(profile.currentGpa);
-  const targetGpaValue = Number(profile.targetGpa);
+function plannedCourseCodes(semesterPlan) {
+  return semesterPlan.flatMap((semester) => semester.courses);
+}
 
-  if (!Number.isFinite(currentGpaValue) || profile.currentGpa.trim() === "") {
-    return "请先到 Academic Profile 填写 Current GPA。";
+function getSemesterUnits(semester) {
+  return semester.courses.reduce((total, courseCode) => {
+    const course = getBachelorOfEconomicsCourse(courseCode);
+    return total + (course?.units ?? 0);
+  }, 0);
+}
+
+function getFirstAvailableSemesterId(semesterPlan) {
+  return semesterPlan.find((semester) => semester.courses.length < 4)?.id ?? semesterPlan[0]?.id;
+}
+
+function ProfileIssue({ profile }) {
+  if (profile.currentGpa && profile.targetGpa) {
+    return null;
   }
 
-  if (!Number.isFinite(targetGpaValue) || profile.targetGpa.trim() === "") {
-    return "请先到 Academic Profile 填写 Target GPA。";
-  }
-
-  if (profile.completedCourses.length === 0) {
-    return "请先到 Academic Profile 选择至少一门已完成课程。";
-  }
-
-  return "";
+  return (
+    <div className="rounded-lg border border-[#fed7aa] bg-[#fff7ed] p-4 text-sm leading-6 text-[#9a3412]">
+      推荐结果会更准确，如果你先到{" "}
+      <Link href="/profile" className="font-semibold underline underline-offset-4">
+        Academic Profile
+      </Link>{" "}
+      填写 Current GPA、Target GPA 和已完成课程。
+    </div>
+  );
 }
 
 export default function CoursePlannerPage() {
-  const { profile } = useProfile();
-  const [hasGeneratedPlan, setHasGeneratedPlan] = useState(false);
-  const [result, setResult] = useState(null);
-  const [formError, setFormError] = useState("");
-
-  const completedCourseDetails = useMemo(() => {
-    const completedCourseSet = new Set(profile.completedCourses);
-
-    return uqBachelorOfEconomicsCourses.filter((course) =>
-      completedCourseSet.has(course.code)
-    );
-  }, [profile.completedCourses]);
-
-  useEffect(() => {
-    if (!hasGeneratedPlan) {
-      return;
-    }
-
-    const profileIssue = getProfileIssues(profile);
-
-    if (profileIssue) {
-      setFormError(profileIssue);
-      setResult(null);
-      return;
-    }
-
-    setResult(
+  const { profile, updateProfile } = useProfile();
+  const [selectedCourseBySemester, setSelectedCourseBySemester] = useState({});
+  const semesterPlan = profile.semesterPlan;
+  const completedCourseSet = useMemo(
+    () => new Set(profile.completedCourses),
+    [profile.completedCourses]
+  );
+  const plannedCodes = useMemo(() => plannedCourseCodes(semesterPlan), [semesterPlan]);
+  const plannedCourseSet = useMemo(() => new Set(plannedCodes), [plannedCodes]);
+  const completedAndPlannedCourses = useMemo(
+    () => uniqueCourseCodes([...profile.completedCourses, ...plannedCodes]),
+    [plannedCodes, profile.completedCourses]
+  );
+  const programRule = useMemo(() => getProgramRuleForProfile(profile), [profile]);
+  const planningProfile = useMemo(
+    () => ({
+      ...profile,
+      completedCourses: completedAndPlannedCourses
+    }),
+    [completedAndPlannedCourses, profile]
+  );
+  const graduationResult = useMemo(
+    () => checkGraduation(planningProfile, uqBachelorOfEconomicsCourses, programRule),
+    [planningProfile, programRule]
+  );
+  const recommendationResult = useMemo(
+    () =>
       recommendCourses({
         program: uqBachelorOfEconomicsProgram,
-        currentGpa: Number(profile.currentGpa),
-        completedCourses: profile.completedCourses,
-        targetGpa: Number(profile.targetGpa),
+        currentGpa: Number(profile.currentGpa) || 0,
+        completedCourses: completedAndPlannedCourses,
+        targetGpa: Number(profile.targetGpa) || Number(profile.currentGpa) || 0,
         preferredWorkload: profile.preferredWorkload
-      })
-    );
-    setFormError("");
-  }, [profile, hasGeneratedPlan]);
+      }),
+    [completedAndPlannedCourses, profile]
+  );
+  const availableCourses = useMemo(
+    () =>
+      uqBachelorOfEconomicsCourses.filter(
+        (course) => !completedCourseSet.has(course.code) && !plannedCourseSet.has(course.code)
+      ),
+    [completedCourseSet, plannedCourseSet]
+  );
 
-  function generatePlan(event) {
-    event.preventDefault();
+  function saveSemesterPlan(nextSemesterPlan) {
+    updateProfile({
+      semesterPlan: nextSemesterPlan.map((semester) => ({
+        ...semester,
+        courses: uniqueCourseCodes(semester.courses)
+      }))
+    });
+  }
 
-    const profileIssue = getProfileIssues(profile);
-
-    if (profileIssue) {
-      setFormError(profileIssue);
-      setResult(null);
-      setHasGeneratedPlan(false);
+  function addCourse(semesterId, courseCode) {
+    if (!courseCode || completedCourseSet.has(courseCode) || plannedCourseSet.has(courseCode)) {
       return;
     }
 
-    const nextResult = recommendCourses({
-      program: uqBachelorOfEconomicsProgram,
-      currentGpa: Number(profile.currentGpa),
-      completedCourses: profile.completedCourses,
-      targetGpa: Number(profile.targetGpa),
-      preferredWorkload: profile.preferredWorkload
-    });
+    saveSemesterPlan(
+      semesterPlan.map((semester) =>
+        semester.id === semesterId
+          ? { ...semester, courses: [...semester.courses, courseCode] }
+          : semester
+      )
+    );
+    setSelectedCourseBySemester((current) => ({ ...current, [semesterId]: "" }));
+  }
 
-    setResult(nextResult);
-    setFormError("");
-    setHasGeneratedPlan(true);
+  function removeCourse(semesterId, courseCode) {
+    saveSemesterPlan(
+      semesterPlan.map((semester) =>
+        semester.id === semesterId
+          ? { ...semester, courses: semester.courses.filter((code) => code !== courseCode) }
+          : semester
+      )
+    );
+  }
+
+  function moveCourse(semesterId, courseCode, direction) {
+    const currentIndex = semesterPlan.findIndex((semester) => semester.id === semesterId);
+    const nextIndex = currentIndex + direction;
+
+    if (currentIndex < 0 || nextIndex < 0 || nextIndex >= semesterPlan.length) {
+      return;
+    }
+
+    const nextPlan = semesterPlan.map((semester) => ({ ...semester, courses: [...semester.courses] }));
+    nextPlan[currentIndex].courses = nextPlan[currentIndex].courses.filter(
+      (code) => code !== courseCode
+    );
+    nextPlan[nextIndex].courses = uniqueCourseCodes([...nextPlan[nextIndex].courses, courseCode]);
+    saveSemesterPlan(nextPlan);
+  }
+
+  function addRecommendedCourse(courseCode) {
+    const targetSemesterId = getFirstAvailableSemesterId(semesterPlan);
+
+    if (targetSemesterId) {
+      addCourse(targetSemesterId, courseCode);
+    }
+  }
+
+  function generateSemesterPlan() {
+    const targetSemesterId = getFirstAvailableSemesterId(semesterPlan);
+
+    if (!targetSemesterId) {
+      return;
+    }
+
+    const targetSemester = semesterPlan.find((semester) => semester.id === targetSemesterId);
+    const capacity = Math.max(4 - (targetSemester?.courses.length ?? 0), 0);
+    const recommendedCodes = recommendationResult.recommendedCourses
+      .map((recommendation) => recommendation.course.code)
+      .filter((courseCode) => !completedCourseSet.has(courseCode) && !plannedCourseSet.has(courseCode))
+      .slice(0, capacity);
+
+    if (recommendedCodes.length === 0) {
+      return;
+    }
+
+    saveSemesterPlan(
+      semesterPlan.map((semester) =>
+        semester.id === targetSemesterId
+          ? { ...semester, courses: [...semester.courses, ...recommendedCodes] }
+          : semester
+      )
+    );
   }
 
   return (
     <div className="grid gap-7">
       <section className="pt-2 sm:pt-4">
-        <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_320px] lg:items-end">
+        <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_340px] lg:items-end">
           <div>
             <div className="inline-flex items-center gap-2 rounded-full border border-[#e5e5ea] bg-white px-3 py-1.5 text-sm font-medium text-[#6e6e73]">
               <GraduationCap className="h-4 w-4 text-[#51247a]" aria-hidden="true" />
               UQ Bachelor of Economics
             </div>
             <h1 className="mt-6 max-w-3xl text-4xl font-semibold leading-tight tracking-normal text-[#1d1d1f] sm:text-6xl">
-              Course Planner
+              Degree Planner
             </h1>
             <p className="mt-4 max-w-2xl text-base leading-7 text-[#6e6e73] sm:text-lg">
-              课程推荐现在统一读取 Academic Profile，再交给本地规则引擎生成下学期计划。
+              把未来 6 个学期排出来。课程来自最新 Course Database，毕业检查来自 Program Rules，推荐来自 Recommendation Engine。
             </p>
           </div>
 
           <div className={`${panelClass} p-5`}>
-            <p className="text-sm font-medium text-[#6e6e73]">Recommendation Engine</p>
-            <p className="mt-2 text-2xl font-semibold tracking-normal text-[#1d1d1f]">
-              Version 1
+            <p className="text-sm font-medium text-[#6e6e73]">Planned Degree Progress</p>
+            <p className="mt-2 text-5xl font-semibold tracking-normal text-[#1d1d1f]">
+              {graduationResult.overallProgress}%
             </p>
+            <div className="mt-5 h-2.5 overflow-hidden rounded-full bg-[#f5f5f7]">
+              <div
+                className="h-full rounded-full bg-[#51247a]"
+                style={{ width: `${graduationResult.overallProgress}%` }}
+              />
+            </div>
             <p className="mt-4 border-t border-[#e5e5ea] pt-4 text-sm leading-6 text-[#6e6e73]">
-              全部使用本地规则，不连接数据库，不连接 OpenAI。
+              {completedAndPlannedCourses.length} courses completed or planned · {graduationResult.missingUnits} units missing
             </p>
           </div>
         </div>
       </section>
 
-      <div className="grid gap-5 lg:grid-cols-[minmax(0,1fr)_360px] lg:items-start">
-        <form className={`${panelClass} p-5 sm:p-6`} onSubmit={generatePlan}>
-          <div className="flex items-center gap-3">
-            <span className="grid h-10 w-10 place-items-center rounded-lg bg-[#f5f5f7] text-[#51247a]">
-              <UserRound className="h-5 w-5" aria-hidden="true" />
-            </span>
+      <section className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+        <div className={`${panelClass} p-5`}>
+          <BookOpen className="h-5 w-5 text-[#51247a]" aria-hidden="true" />
+          <p className="mt-4 text-sm font-medium text-[#6e6e73]">Completed Courses</p>
+          <p className="mt-1 text-4xl font-semibold text-[#1d1d1f]">{profile.completedCourses.length}</p>
+        </div>
+        <div className={`${panelClass} p-5`}>
+          <ClipboardList className="h-5 w-5 text-[#51247a]" aria-hidden="true" />
+          <p className="mt-4 text-sm font-medium text-[#6e6e73]">Planned Courses</p>
+          <p className="mt-1 text-4xl font-semibold text-[#1d1d1f]">{plannedCodes.length}</p>
+        </div>
+        <div className={`${panelClass} p-5`}>
+          <Target className="h-5 w-5 text-[#51247a]" aria-hidden="true" />
+          <p className="mt-4 text-sm font-medium text-[#6e6e73]">Target GPA</p>
+          <p className="mt-1 text-4xl font-semibold text-[#1d1d1f]">{profile.targetGpa || "-"}</p>
+        </div>
+        <div className={`${panelClass} p-5`}>
+          <Sparkles className="h-5 w-5 text-[#51247a]" aria-hidden="true" />
+          <p className="mt-4 text-sm font-medium text-[#6e6e73]">Next Recommendations</p>
+          <p className="mt-1 text-4xl font-semibold text-[#1d1d1f]">
+            {recommendationResult.recommendedCourses.length}
+          </p>
+        </div>
+      </section>
+
+      <div className="grid gap-5 xl:grid-cols-[minmax(0,1fr)_360px] xl:items-start">
+        <section className={`${panelClass} p-5 sm:p-6`}>
+          <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
             <div>
               <h2 className="text-2xl font-semibold tracking-normal text-[#1d1d1f]">
-                Academic Profile
+                Six-Semester Plan
               </h2>
-              <p className="mt-1 text-sm text-[#6e6e73]">
-                这里不再重复输入数据。请先在 Profile 保存你的学习信息。
+              <p className="mt-1 text-sm leading-6 text-[#6e6e73]">
+                Add Course、Move Course、Remove Course 都会保存到 Academic Profile。
               </p>
             </div>
-          </div>
-
-          <div className="mt-6 grid gap-3 sm:grid-cols-2">
-            <div className={`${softPanelClass} p-4`}>
-              <p className="text-xs font-medium uppercase text-[#86868b]">Program</p>
-              <p className="mt-2 text-base font-semibold text-[#1d1d1f]">{profile.program}</p>
-              <p className="mt-1 text-sm text-[#6e6e73]">{profile.university}</p>
-            </div>
-            <div className={`${softPanelClass} p-4`}>
-              <p className="text-xs font-medium uppercase text-[#86868b]">Expected Graduation</p>
-              <p className="mt-2 text-base font-semibold text-[#1d1d1f]">
-                {profile.expectedGraduationSemester || "Not set"}
-              </p>
-              <p className="mt-1 text-sm text-[#6e6e73]">来自 Academic Profile</p>
-            </div>
-            <div className={`${softPanelClass} p-4`}>
-              <p className="text-xs font-medium uppercase text-[#86868b]">Current GPA</p>
-              <p className="mt-2 text-3xl font-semibold text-[#1d1d1f]">
-                {profile.currentGpa || "-"}
-              </p>
-            </div>
-            <div className={`${softPanelClass} p-4`}>
-              <p className="text-xs font-medium uppercase text-[#86868b]">Target GPA</p>
-              <p className="mt-2 text-3xl font-semibold text-[#1d1d1f]">
-                {profile.targetGpa || "-"}
-              </p>
-            </div>
-            <div className={`${softPanelClass} p-4`}>
-              <p className="text-xs font-medium uppercase text-[#86868b]">Preferred Workload</p>
-              <p className="mt-2 text-3xl font-semibold text-[#1d1d1f]">
-                {profile.preferredWorkload}
-              </p>
-            </div>
-            <div className={`${softPanelClass} p-4`}>
-              <p className="text-xs font-medium uppercase text-[#86868b]">Completed Courses</p>
-              <p className="mt-2 text-3xl font-semibold text-[#1d1d1f]">
-                {profile.completedCourses.length}
-              </p>
-            </div>
-          </div>
-
-          <div className="mt-5 rounded-lg border border-[#e5e5ea] bg-white p-4">
-            <div className="flex items-center justify-between gap-3">
-              <p className="text-sm font-semibold text-[#1d1d1f]">已完成课程</p>
-              <Link
-                href="/profile"
-                className="rounded-full border border-[#e5e5ea] bg-white px-3 py-1.5 text-xs font-semibold text-[#6e6e73] transition hover:bg-[#f5f5f7] hover:text-[#1d1d1f]"
-              >
-                Edit Profile
-              </Link>
-            </div>
-
-            <div className="mt-3 flex flex-wrap gap-2">
-              {completedCourseDetails.length ? (
-                completedCourseDetails.map((course) => (
-                  <span
-                    key={course.code}
-                    className="rounded-full border border-[#e5e5ea] bg-[#fbfbfd] px-3 py-1.5 text-xs font-semibold text-[#1d1d1f]"
-                    title={course.name}
-                  >
-                    {course.code}
-                  </span>
-                ))
-              ) : (
-                <p className="text-sm leading-6 text-[#86868b]">
-                  还没有选择已完成课程。请先完善 Academic Profile。
-                </p>
-              )}
-            </div>
-          </div>
-
-          {formError ? (
-            <div className="mt-5 rounded-lg border border-[#fed7aa] bg-[#fff7ed] px-4 py-3 text-sm leading-6 text-[#9a3412]">
-              {formError}{" "}
-              <Link href="/profile" className="font-semibold underline underline-offset-4">
-                打开 Academic Profile
-              </Link>
-            </div>
-          ) : null}
-
-          <div className="mt-6 flex flex-col gap-3 sm:flex-row">
             <button
-              type="submit"
-              className="inline-flex min-h-12 items-center justify-center gap-2 rounded-lg bg-[#51247a] px-4 text-sm font-semibold text-white transition hover:bg-[#3f1c62]"
+              type="button"
+              className="inline-flex min-h-11 items-center justify-center gap-2 rounded-lg bg-[#51247a] px-4 text-sm font-semibold text-white transition hover:bg-[#3f1c62]"
+              onClick={generateSemesterPlan}
             >
               <Sparkles className="h-4 w-4" aria-hidden="true" />
               Generate Semester Plan
             </button>
-            <Link
-              href="/profile"
-              className="inline-flex min-h-12 items-center justify-center gap-2 rounded-lg border border-[#e5e5ea] bg-white px-4 text-sm font-semibold text-[#1d1d1f] transition hover:bg-[#f5f5f7]"
-            >
-              <UserRound className="h-4 w-4" aria-hidden="true" />
-              Edit Academic Profile
-            </Link>
           </div>
-        </form>
 
-        <aside className="grid gap-4 lg:sticky lg:top-24">
-          <div className={`${panelClass} p-5`}>
+          <div className="mt-6 grid gap-4 lg:grid-cols-2">
+            {semesterPlan.map((semester, semesterIndex) => {
+              const selectedCourseCode = selectedCourseBySemester[semester.id] ?? "";
+              const courses = semester.courses
+                .map((courseCode) => getBachelorOfEconomicsCourse(courseCode))
+                .filter(Boolean);
+
+              return (
+                <article key={semester.id} className={`${softPanelClass} p-4`}>
+                  <div className="flex items-start justify-between gap-3">
+                    <div>
+                      <h3 className="text-lg font-semibold text-[#1d1d1f]">{semester.name}</h3>
+                      <p className="mt-1 text-sm text-[#6e6e73]">
+                        {semester.courses.length} courses · {getSemesterUnits(semester)} units
+                      </p>
+                    </div>
+                    <span className="rounded-full border border-[#e5e5ea] bg-white px-3 py-1 text-xs font-semibold text-[#6e6e73]">
+                      S{semesterIndex + 1}
+                    </span>
+                  </div>
+
+                  <div className="mt-4 grid gap-3">
+                    {courses.length ? (
+                      courses.map((course) => (
+                        <div key={course.code} className="rounded-lg border border-[#e5e5ea] bg-white p-3">
+                          <div className="flex items-start justify-between gap-3">
+                            <div className="min-w-0">
+                              <p className="text-sm font-semibold text-[#1d1d1f]">
+                                {course.code} · {course.name}
+                              </p>
+                              <p className="mt-1 text-xs leading-5 text-[#6e6e73]">
+                                {formatCourseMeta(course)}
+                              </p>
+                            </div>
+                            <div className="flex shrink-0 items-center gap-1">
+                              <button
+                                type="button"
+                                className="grid h-8 w-8 place-items-center rounded-lg border border-[#e5e5ea] bg-white text-[#6e6e73] transition hover:bg-[#f5f5f7] disabled:opacity-40"
+                                disabled={semesterIndex === 0}
+                                onClick={() => moveCourse(semester.id, course.code, -1)}
+                                title="Move Course up"
+                              >
+                                <ArrowUp className="h-4 w-4" aria-hidden="true" />
+                              </button>
+                              <button
+                                type="button"
+                                className="grid h-8 w-8 place-items-center rounded-lg border border-[#e5e5ea] bg-white text-[#6e6e73] transition hover:bg-[#f5f5f7] disabled:opacity-40"
+                                disabled={semesterIndex === semesterPlan.length - 1}
+                                onClick={() => moveCourse(semester.id, course.code, 1)}
+                                title="Move Course down"
+                              >
+                                <ArrowDown className="h-4 w-4" aria-hidden="true" />
+                              </button>
+                              <button
+                                type="button"
+                                className="grid h-8 w-8 place-items-center rounded-lg border border-[#e5e5ea] bg-white text-[#b91c1c] transition hover:bg-[#fef2f2]"
+                                onClick={() => removeCourse(semester.id, course.code)}
+                                title="Remove Course"
+                              >
+                                <Trash2 className="h-4 w-4" aria-hidden="true" />
+                              </button>
+                            </div>
+                          </div>
+                        </div>
+                      ))
+                    ) : (
+                      <div className="rounded-lg border border-dashed border-[#d2d2d7] bg-white p-4 text-sm leading-6 text-[#86868b]">
+                        这个学期还没有课程。可以手动添加，也可以用推荐引擎生成计划。
+                      </div>
+                    )}
+                  </div>
+
+                  <div className="mt-4 grid gap-2 sm:grid-cols-[minmax(0,1fr)_auto]">
+                    <select
+                      className={controlClass}
+                      value={selectedCourseCode}
+                      onChange={(event) =>
+                        setSelectedCourseBySemester((current) => ({
+                          ...current,
+                          [semester.id]: event.target.value
+                        }))
+                      }
+                    >
+                      <option value="">Choose course</option>
+                      {availableCourses.map((course) => (
+                        <option key={course.code} value={course.code}>
+                          {course.code} · {course.name}
+                        </option>
+                      ))}
+                    </select>
+                    <button
+                      type="button"
+                      className="inline-flex min-h-11 items-center justify-center gap-2 rounded-lg border border-[#e5e5ea] bg-white px-4 text-sm font-semibold text-[#1d1d1f] transition hover:bg-[#f5f5f7] disabled:opacity-40"
+                      disabled={!selectedCourseCode}
+                      onClick={() => addCourse(semester.id, selectedCourseCode)}
+                    >
+                      <Plus className="h-4 w-4" aria-hidden="true" />
+                      Add Course
+                    </button>
+                  </div>
+                </article>
+              );
+            })}
+          </div>
+        </section>
+
+        <aside className="grid gap-4 xl:sticky xl:top-24">
+          <section className={`${panelClass} p-5`}>
+            <div className="flex items-center gap-3">
+              <span className="grid h-10 w-10 place-items-center rounded-lg bg-[#f5f5f7] text-[#51247a]">
+                <UserRound className="h-5 w-5" aria-hidden="true" />
+              </span>
+              <div>
+                <p className="text-sm font-medium text-[#6e6e73]">Academic Profile</p>
+                <p className="text-xl font-semibold text-[#1d1d1f]">{profile.program}</p>
+              </div>
+            </div>
+            <div className="mt-5 grid gap-3">
+              <div className={`${softPanelClass} p-4`}>
+                <p className="text-xs font-medium uppercase text-[#86868b]">Current / Target GPA</p>
+                <p className="mt-2 text-lg font-semibold text-[#1d1d1f]">
+                  {profile.currentGpa || "-"} / {profile.targetGpa || "-"}
+                </p>
+              </div>
+              <div className={`${softPanelClass} p-4`}>
+                <p className="text-xs font-medium uppercase text-[#86868b]">Preferred Workload</p>
+                <p className="mt-2 text-lg font-semibold text-[#1d1d1f]">
+                  {profile.preferredWorkload}
+                </p>
+              </div>
+            </div>
+          </section>
+
+          <ProfileIssue profile={profile} />
+
+          <section className={`${panelClass} p-5`}>
+            <div className="flex items-center justify-between gap-3">
+              <div>
+                <p className="text-sm font-medium text-[#6e6e73]">Graduation Check</p>
+                <p className="mt-1 text-3xl font-semibold text-[#1d1d1f]">
+                  {graduationResult.overallProgress}%
+                </p>
+              </div>
+              <CheckCircle2 className="h-6 w-6 text-[#51247a]" aria-hidden="true" />
+            </div>
+            <p className="mt-4 border-t border-[#e5e5ea] pt-4 text-sm leading-6 text-[#6e6e73]">
+              使用当前 Profile + 已规划课程调用 Graduation Checker。
+            </p>
+          </section>
+
+          <section className={`${panelClass} p-5`}>
             <div className="flex items-center justify-between gap-3">
               <div>
                 <p className="text-sm font-medium text-[#6e6e73]">Difficulty Score</p>
-                <p className="mt-1 text-4xl font-semibold tracking-normal text-[#1d1d1f]">
-                  {result ? result.difficultyScore : "-"}
+                <p className="mt-1 text-3xl font-semibold text-[#1d1d1f]">
+                  {recommendationResult.difficultyScore || "-"}
                 </p>
               </div>
-              <span className="grid h-10 w-10 place-items-center rounded-lg bg-[#f5f5f7] text-[#51247a]">
-                <Target className="h-5 w-5" aria-hidden="true" />
-              </span>
+              <Target className="h-6 w-6 text-[#51247a]" aria-hidden="true" />
             </div>
             <p className="mt-4 border-t border-[#e5e5ea] pt-4 text-sm leading-6 text-[#6e6e73]">
-              {result ? result.reason : "点击 Generate Semester Plan 后显示推荐总结。"}
+              {recommendationResult.reason}
             </p>
-          </div>
+          </section>
 
-          <div className={`${panelClass} p-5`}>
-            <div className="flex items-center justify-between gap-3">
-              <div>
-                <p className="text-sm font-medium text-[#6e6e73]">
-                  Estimated Semester Workload
-                </p>
-                <p className="mt-1 text-3xl font-semibold tracking-normal text-[#1d1d1f]">
-                  {result ? result.estimatedSemesterWorkload.label : "-"}
-                </p>
-              </div>
-              <span className="grid h-10 w-10 place-items-center rounded-lg bg-[#f5f5f7] text-[#51247a]">
-                <ClipboardList className="h-5 w-5" aria-hidden="true" />
-              </span>
-            </div>
-
-            {result ? (
-              <div className="mt-4 grid gap-2 border-t border-[#e5e5ea] pt-4 text-sm leading-6 text-[#6e6e73]">
-                <p>{result.estimatedSemesterWorkload.summary}</p>
-                <p>
-                  Preferred: {result.estimatedSemesterWorkload.preferredWorkload} · Units:{" "}
-                  {result.estimatedSemesterWorkload.totalUnits} · Workload Score:{" "}
-                  {result.estimatedSemesterWorkload.workloadScore}
-                </p>
-              </div>
-            ) : (
-              <p className="mt-4 border-t border-[#e5e5ea] pt-4 text-sm leading-6 text-[#86868b]">
-                Generate a semester plan to estimate workload.
-              </p>
-            )}
-          </div>
-
-          <div className={`${panelClass} p-5`}>
-            <div className="flex items-center gap-3">
-              <span className="grid h-10 w-10 place-items-center rounded-lg bg-[#f5f5f7] text-[#51247a]">
+          {recommendationResult.warnings.length ? (
+            <section className="rounded-lg border border-[#fed7aa] bg-[#fff7ed] p-5">
+              <div className="flex items-center gap-2 text-[#9a3412]">
                 <AlertTriangle className="h-5 w-5" aria-hidden="true" />
-              </span>
-              <div>
-                <p className="text-sm font-medium text-[#6e6e73]">Warnings</p>
-                <p className="text-2xl font-semibold tracking-normal text-[#1d1d1f]">
-                  {result ? result.warnings.length : 0}
-                </p>
+                <p className="text-sm font-semibold">Warnings</p>
               </div>
-            </div>
-
-            <div className="mt-4 grid gap-3">
-              {result?.warnings.length ? (
-                result.warnings.map((warning) => (
-                  <p key={warning} className={`${softPanelClass} p-3 text-sm leading-6 text-[#6e6e73]`}>
+              <div className="mt-3 grid gap-2">
+                {recommendationResult.warnings.slice(0, 3).map((warning) => (
+                  <p key={warning} className="text-sm leading-6 text-[#9a3412]">
                     {warning}
                   </p>
-                ))
-              ) : (
-                <p className="text-sm leading-6 text-[#86868b]">
-                  暂无 warning。生成推荐后这里会显示 prerequisite 或风险提示。
-                </p>
-              )}
-            </div>
-          </div>
+                ))}
+              </div>
+            </section>
+          ) : null}
         </aside>
       </div>
 
       <section className={`${panelClass} p-5 sm:p-6`}>
         <div className="flex items-center gap-3">
           <span className="grid h-10 w-10 place-items-center rounded-lg bg-[#f5f5f7] text-[#51247a]">
-            <CheckCircle2 className="h-5 w-5" aria-hidden="true" />
-          </span>
-          <div>
-            <h2 className="text-2xl font-semibold tracking-normal text-[#1d1d1f]">Reasons</h2>
-            <p className="mt-1 text-sm text-[#6e6e73]">
-              推荐引擎给出的整体判断依据。
-            </p>
-          </div>
-        </div>
-
-        <div className="mt-6 grid gap-3">
-          {result?.reasons.length ? (
-            result.reasons.map((reason) => (
-              <p key={reason} className={`${softPanelClass} p-4 text-sm leading-6 text-[#6e6e73]`}>
-                {reason}
-              </p>
-            ))
-          ) : (
-            <div className={`${softPanelClass} p-5 text-sm leading-6 text-[#6e6e73]`}>
-              生成学期计划后，这里会显示推荐原因。
-            </div>
-          )}
-        </div>
-      </section>
-
-      <section className={`${panelClass} p-5 sm:p-6`}>
-        <div className="flex items-center gap-3">
-          <span className="grid h-10 w-10 place-items-center rounded-lg bg-[#f5f5f7] text-[#51247a]">
-            <BookOpen className="h-5 w-5" aria-hidden="true" />
+            <Sparkles className="h-5 w-5" aria-hidden="true" />
           </span>
           <div>
             <h2 className="text-2xl font-semibold tracking-normal text-[#1d1d1f]">
-              Recommended Courses
+              Recommended Next Courses
             </h2>
             <p className="mt-1 text-sm text-[#6e6e73]">
-              推荐结果来自 Academic Profile、本地 Mock Data 和规则引擎。
+              这里只展示 Recommendation Engine 的结果。点击 Add to Plan 会加入第一个有空位的 semester。
             </p>
           </div>
         </div>
 
-        <div className="mt-6 grid gap-3">
-          {result ? (
-            result.recommendedCourses.map((recommendation) => (
+        <div className="mt-6 grid gap-3 lg:grid-cols-2">
+          {recommendationResult.recommendedCourses.length ? (
+            recommendationResult.recommendedCourses.map((recommendation) => (
               <article key={recommendation.course.code} className={`${softPanelClass} p-4`}>
                 <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
                   <div className="min-w-0">
-                    <p className="text-lg font-semibold tracking-normal text-[#1d1d1f]">
+                    <p className="text-lg font-semibold text-[#1d1d1f]">
                       {recommendation.course.code} · {recommendation.course.name}
                     </p>
                     <p className="mt-1 text-sm leading-6 text-[#6e6e73]">
                       {formatCourseMeta(recommendation.course)}
                     </p>
                     <p className="mt-3 text-sm leading-6 text-[#6e6e73]">
-                      {recommendation.course.description}
+                      {recommendation.reasons[0] || recommendation.course.description}
                     </p>
                   </div>
-
-                  <div className="grid min-w-40 grid-cols-2 gap-2 sm:text-right">
-                    <div>
-                      <p className="text-xs font-medium text-[#86868b]">Difficulty</p>
-                      <p className="text-xl font-semibold text-[#1d1d1f]">
-                        {recommendation.course.difficulty}/5
-                      </p>
-                    </div>
-                    <div>
-                      <p className="text-xs font-medium text-[#86868b]">Math</p>
-                      <p className="text-xl font-semibold text-[#1d1d1f]">
-                        {recommendation.course.mathIntensity}/5
-                      </p>
-                    </div>
-                  </div>
-                </div>
-
-                <div className="mt-4 grid gap-3 md:grid-cols-2">
-                  <div>
-                    <p className="text-sm font-semibold text-[#1d1d1f]">Reasons</p>
-                    <div className="mt-2 grid gap-2">
-                      {recommendation.reasons.map((reason) => (
-                        <p key={reason} className="flex gap-2 text-sm leading-6 text-[#6e6e73]">
-                          <CheckCircle2 className="mt-1 h-4 w-4 shrink-0 text-[#51247a]" aria-hidden="true" />
-                          {reason}
-                        </p>
-                      ))}
-                    </div>
-                  </div>
-
-                  <div>
-                    <p className="text-sm font-semibold text-[#1d1d1f]">Course Weights</p>
-                    <div className="mt-2 grid grid-cols-2 gap-2">
-                      <div className="rounded-lg border border-[#e5e5ea] bg-white p-3">
-                        <p className="text-xs font-medium text-[#86868b]">Exam</p>
-                        <p className="text-lg font-semibold text-[#1d1d1f]">
-                          {recommendation.course.examWeight}%
-                        </p>
-                      </div>
-                      <div className="rounded-lg border border-[#e5e5ea] bg-white p-3">
-                        <p className="text-xs font-medium text-[#86868b]">Assignment</p>
-                        <p className="text-lg font-semibold text-[#1d1d1f]">
-                          {recommendation.course.assignmentWeight}%
-                        </p>
-                      </div>
-                    </div>
-                  </div>
+                  <button
+                    type="button"
+                    className="inline-flex min-h-10 shrink-0 items-center justify-center gap-2 rounded-lg border border-[#e5e5ea] bg-white px-3 text-sm font-semibold text-[#1d1d1f] transition hover:bg-[#f5f5f7]"
+                    onClick={() => addRecommendedCourse(recommendation.course.code)}
+                  >
+                    <Plus className="h-4 w-4" aria-hidden="true" />
+                    Add to Plan
+                  </button>
                 </div>
               </article>
             ))
           ) : (
             <div className={`${softPanelClass} p-5 text-sm leading-6 text-[#6e6e73]`}>
-              先保存 Academic Profile，然后点击 Generate Semester Plan 生成推荐课程。
+              当前没有可推荐课程。请检查 Profile 或清理已规划课程。
             </div>
           )}
         </div>
