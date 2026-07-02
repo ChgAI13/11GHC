@@ -39,6 +39,8 @@ const copy = {
     resetAllData: "Reset All Data",
     footerBuiltBy: "Built by a UQ Economics student.",
     footerUnofficial: "Unofficial tool. Not affiliated with The University of Queensland.",
+    footerBetaWarning:
+      "⚠️ Beta Version — Please verify all academic decisions with official UQ resources before enrolling in courses.",
     resetConfirm:
       "确定要清空 Academic Profile 吗？Dashboard、GPA、Course Planner 和 Graduation Checker 会同步重置。",
     nav: {
@@ -57,6 +59,8 @@ const copy = {
     resetAllData: "Reset All Data",
     footerBuiltBy: "Built by a UQ Economics student.",
     footerUnofficial: "Unofficial tool. Not affiliated with The University of Queensland.",
+    footerBetaWarning:
+      "⚠️ Beta Version — Please verify all academic decisions with official UQ resources before enrolling in courses.",
     resetConfirm:
       "Clear Academic Profile? Dashboard, GPA Planner, Course Planner, and Graduation Checker will reset together.",
     nav: {
@@ -182,6 +186,9 @@ function AppFooter({ pathname, t }) {
         <div className="mb-5 grid gap-1">
           <p className="font-semibold text-[#1d1d1f] dark:text-white">{t.footerBuiltBy}</p>
           <p>{t.footerUnofficial}</p>
+          <p className="text-xs leading-5 text-[#86868b] dark:text-[#a1a1a6]">
+            {t.footerBetaWarning}
+          </p>
         </div>
       ) : null}
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
