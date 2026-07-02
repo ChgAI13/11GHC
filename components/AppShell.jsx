@@ -19,7 +19,7 @@ const navItems = [
   { href: "/gpa", key: "gpaPlanner", icon: Gauge },
   { href: "/course-planner", key: "coursePlanner", icon: BookOpen },
   { href: "/graduation", key: "graduationChecker", icon: ClipboardCheck },
-  { href: "#", key: "courseDatabase", icon: Database }
+  { href: "/courses", key: "courseDatabase", icon: Database }
 ];
 
 const copy = {
