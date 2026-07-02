@@ -8,6 +8,7 @@ import {
   CheckCircle2,
   GraduationCap,
   Save,
+  Search,
   Settings2,
   SlidersHorizontal
 } from "lucide-react";
@@ -33,11 +34,29 @@ export default function AcademicProfilePage() {
   const { profile, academicProgress, saveProfile } = useProfile();
   const [draftProfile, setDraftProfile] = useState(profile);
   const [savedMessage, setSavedMessage] = useState("");
+  const [courseSearch, setCourseSearch] = useState("");
 
   const completedCourseSet = useMemo(
     () => new Set(draftProfile.completedCourses),
     [draftProfile.completedCourses]
   );
+  const selectedCourses = useMemo(
+    () => uqBachelorOfEconomicsCourses.filter((course) => completedCourseSet.has(course.code)),
+    [completedCourseSet]
+  );
+  const filteredCourses = useMemo(() => {
+    const normalizedSearch = courseSearch.trim().toLowerCase();
+
+    if (!normalizedSearch) {
+      return uqBachelorOfEconomicsCourses.slice(0, 8);
+    }
+
+    return uqBachelorOfEconomicsCourses.filter(
+      (course) =>
+        course.code.toLowerCase().includes(normalizedSearch) ||
+        course.name.toLowerCase().includes(normalizedSearch)
+    );
+  }, [courseSearch]);
   const draftProgress = useMemo(
     () => calculateAcademicProgress(draftProfile),
     [draftProfile]
@@ -236,8 +255,49 @@ export default function AcademicProfilePage() {
               </button>
             </div>
 
+            <label className="mt-4 block">
+              <span className="text-sm font-medium text-[#6e6e73]">Search courses</span>
+              <span className="relative mt-2 block">
+                <Search
+                  className="pointer-events-none absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-[#86868b]"
+                  aria-hidden="true"
+                />
+                <input
+                  className={`${inputClass} mt-0 pl-11`}
+                  type="search"
+                  value={courseSearch}
+                  placeholder="搜索课程代码或名称，例如 ECON2010"
+                  onChange={(event) => setCourseSearch(event.target.value)}
+                />
+              </span>
+            </label>
+
+            {selectedCourses.length ? (
+              <div className="mt-4 rounded-lg border border-[#e5e5ea] bg-[#fbfbfd] p-4">
+                <div className="flex items-center justify-between gap-3">
+                  <p className="text-sm font-semibold text-[#1d1d1f]">已选择课程</p>
+                  <p className="text-xs font-semibold text-[#86868b]">
+                    {selectedCourses.length} selected
+                  </p>
+                </div>
+                <div className="mt-3 flex flex-wrap gap-2">
+                  {selectedCourses.map((course) => (
+                    <button
+                      key={course.code}
+                      type="button"
+                      className="rounded-full border border-[#51247a] bg-white px-3 py-1.5 text-xs font-semibold text-[#51247a] transition hover:bg-[#fbf8ff]"
+                      onClick={() => toggleCompletedCourse(course.code)}
+                      title="点击取消选择"
+                    >
+                      {course.code} ×
+                    </button>
+                  ))}
+                </div>
+              </div>
+            ) : null}
+
             <div className="mt-4 grid gap-3 md:grid-cols-2">
-              {uqBachelorOfEconomicsCourses.map((course) => {
+              {filteredCourses.map((course) => {
                 const checked = completedCourseSet.has(course.code);
 
                 return (
@@ -267,6 +327,16 @@ export default function AcademicProfilePage() {
                 );
               })}
             </div>
+            {!filteredCourses.length ? (
+              <div className={`${softPanelClass} mt-4 p-5 text-sm leading-6 text-[#86868b]`}>
+                没有找到匹配课程。试试课程代码，例如 ECON1010、ECON2010、ECON3440。
+              </div>
+            ) : null}
+            {!courseSearch.trim() ? (
+              <p className="mt-3 text-sm leading-6 text-[#86868b]">
+                默认只显示前 8 门课程。输入课程代码或名称后会筛选完整课程库。
+              </p>
+            ) : null}
           </div>
         </section>
 
