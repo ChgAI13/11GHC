@@ -70,9 +70,13 @@ export const zh = {
     emailLabel: "Email（可选）",
     emailPlaceholder: "you@example.com",
     submit: "提交反馈",
+    copyFeedback: "复制反馈内容",
     close: "关闭反馈弹窗",
     validation: "请先填写反馈内容。",
-    success: "Thank you for helping improve GradPlan!"
+    draftOpened: "Your email draft has been opened. Please send it from your email app.",
+    emailAppFallback: (email) => `Your email app did not open. Please email us at: ${email}`,
+    copySuccess: "反馈内容已复制，可以粘贴到邮箱发送。",
+    copyError: "复制失败，请手动复制你的反馈内容。"
   },
   landing: {
     badge: "GradPlan Beta",

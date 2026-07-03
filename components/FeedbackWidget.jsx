@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { Bug, Lightbulb, MessageCircle, MessageSquareText, Send, X } from "lucide-react";
+import { Bug, Clipboard, Lightbulb, MessageCircle, MessageSquareText, Send, X } from "lucide-react";
 import { useLanguage } from "@/components/LanguageProvider";
 
 const FEEDBACK_RECIPIENT_EMAIL = "3243391301@qq.com";
@@ -23,9 +23,12 @@ function createFeedbackPayload({ typeLabel, message, email }) {
   };
 }
 
-function buildMailtoHref(payload) {
-  const subject = `GradPlan Feedback - ${payload.type}`;
-  const body = [
+function buildFeedbackSubject(type) {
+  return `GradPlan Feedback - ${type}`;
+}
+
+function buildFeedbackBody(payload) {
+  return [
     `Type: ${payload.type}`,
     "",
     "Message:",
@@ -36,8 +39,39 @@ function buildMailtoHref(payload) {
     `Timestamp: ${payload.timestamp}`,
     `Browser User Agent: ${payload.userAgent}`
   ].join("\n");
+}
+
+function buildFeedbackCopyText(payload) {
+  return [
+    `To: ${FEEDBACK_RECIPIENT_EMAIL}`,
+    `Subject: ${buildFeedbackSubject(payload.type)}`,
+    "",
+    buildFeedbackBody(payload)
+  ].join("\n");
+}
+
+function buildMailtoHref(payload) {
+  const subject = buildFeedbackSubject(payload.type);
+  const body = buildFeedbackBody(payload);
 
   return `mailto:${FEEDBACK_RECIPIENT_EMAIL}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
+}
+
+async function copyTextToClipboard(text) {
+  if (navigator.clipboard?.writeText) {
+    await navigator.clipboard.writeText(text);
+    return;
+  }
+
+  const textArea = document.createElement("textarea");
+  textArea.value = text;
+  textArea.setAttribute("readonly", "");
+  textArea.style.position = "fixed";
+  textArea.style.left = "-9999px";
+  document.body.appendChild(textArea);
+  textArea.select();
+  document.execCommand("copy");
+  document.body.removeChild(textArea);
 }
 
 export function FeedbackWidget() {
@@ -49,16 +83,45 @@ export function FeedbackWidget() {
   const [email, setEmail] = useState("");
   const [error, setError] = useState("");
   const [submitted, setSubmitted] = useState(false);
+  const [fallbackVisible, setFallbackVisible] = useState(false);
+  const [copyStatus, setCopyStatus] = useState("");
 
   const selectedTypeLabel = t.typeOptions[feedbackType];
   function openDialog() {
     setIsOpen(true);
     setError("");
+    setCopyStatus("");
   }
 
   function closeDialog() {
     setIsOpen(false);
     setError("");
+    setCopyStatus("");
+    setFallbackVisible(false);
+  }
+
+  function buildCurrentFeedbackPayload() {
+    return createFeedbackPayload({
+      typeLabel: selectedTypeLabel,
+      message: message.trim(),
+      email: email.trim()
+    });
+  }
+
+  async function copyFeedback() {
+    if (!message.trim()) {
+      setError(t.validation);
+      return;
+    }
+
+    try {
+      await copyTextToClipboard(buildFeedbackCopyText(buildCurrentFeedbackPayload()));
+      setError("");
+      setCopyStatus(t.copySuccess);
+    } catch {
+      setCopyStatus("");
+      setError(t.copyError);
+    }
   }
 
   function submitFeedback(event) {
@@ -69,16 +132,30 @@ export function FeedbackWidget() {
       return;
     }
 
-    const feedbackPayload = createFeedbackPayload({
-      typeLabel: selectedTypeLabel,
-      message: message.trim(),
-      email: email.trim()
-    });
+    const feedbackPayload = buildCurrentFeedbackPayload();
     const mailtoHref = buildMailtoHref(feedbackPayload);
+    let didLeavePage = false;
+    const markDidLeavePage = () => {
+      didLeavePage = true;
+    };
+
+    window.addEventListener("blur", markDidLeavePage, { once: true });
+    document.addEventListener("visibilitychange", markDidLeavePage, { once: true });
 
     setSubmitted(true);
+    setFallbackVisible(false);
+    setCopyStatus("");
     setError("");
     window.location.href = mailtoHref;
+
+    window.setTimeout(() => {
+      window.removeEventListener("blur", markDidLeavePage);
+      document.removeEventListener("visibilitychange", markDidLeavePage);
+
+      if (!didLeavePage && document.visibilityState === "visible") {
+        setFallbackVisible(true);
+      }
+    }, 1500);
   }
 
   return (
@@ -128,7 +205,13 @@ export function FeedbackWidget() {
 
             {submitted ? (
               <div className="mt-5 rounded-lg border border-[#bbf7d0] bg-[#f0fdf4] p-4 text-sm font-semibold leading-6 text-[#166534]">
-                {t.success}
+                {t.draftOpened}
+              </div>
+            ) : null}
+
+            {fallbackVisible ? (
+              <div className="mt-3 rounded-lg border border-[#fed7aa] bg-[#fff7ed] p-4 text-sm font-semibold leading-6 text-[#9a3412]">
+                {t.emailAppFallback(FEEDBACK_RECIPIENT_EMAIL)}
               </div>
             ) : null}
 
@@ -174,6 +257,7 @@ export function FeedbackWidget() {
                   onChange={(event) => {
                     setMessage(event.target.value);
                     setError("");
+                    setCopyStatus("");
                   }}
                 />
               </label>
@@ -187,7 +271,10 @@ export function FeedbackWidget() {
                   type="email"
                   placeholder={t.emailPlaceholder}
                   value={email}
-                  onChange={(event) => setEmail(event.target.value)}
+                  onChange={(event) => {
+                    setEmail(event.target.value);
+                    setCopyStatus("");
+                  }}
                 />
               </label>
 
@@ -197,13 +284,29 @@ export function FeedbackWidget() {
                 </p>
               ) : null}
 
-              <button
-                type="submit"
-                className="inline-flex min-h-12 items-center justify-center gap-2 rounded-lg bg-[#51247a] px-4 text-sm font-semibold text-white transition hover:bg-[#3f1c62]"
-              >
-                <Send className="h-4 w-4" aria-hidden="true" />
-                {t.submit}
-              </button>
+              {copyStatus ? (
+                <p className="rounded-lg border border-[#bbf7d0] bg-[#f0fdf4] p-3 text-sm font-medium text-[#166534]">
+                  {copyStatus}
+                </p>
+              ) : null}
+
+              <div className="grid gap-3 sm:grid-cols-2">
+                <button
+                  type="button"
+                  className="inline-flex min-h-12 items-center justify-center gap-2 rounded-lg border border-[#e5e5ea] bg-white px-4 text-sm font-semibold text-[#1d1d1f] transition hover:bg-[#f5f5f7] dark:border-[#3a3a3c] dark:bg-[#111113] dark:text-white dark:hover:bg-[#2c2c2e]"
+                  onClick={copyFeedback}
+                >
+                  <Clipboard className="h-4 w-4" aria-hidden="true" />
+                  {t.copyFeedback}
+                </button>
+                <button
+                  type="submit"
+                  className="inline-flex min-h-12 items-center justify-center gap-2 rounded-lg bg-[#51247a] px-4 text-sm font-semibold text-white transition hover:bg-[#3f1c62]"
+                >
+                  <Send className="h-4 w-4" aria-hidden="true" />
+                  {t.submit}
+                </button>
+              </div>
             </form>
           </section>
         </div>

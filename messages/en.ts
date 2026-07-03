@@ -70,9 +70,13 @@ export const en = {
     emailLabel: "Email (optional)",
     emailPlaceholder: "you@example.com",
     submit: "Submit Feedback",
+    copyFeedback: "Copy Feedback",
     close: "Close feedback dialog",
     validation: "Please tell us what happened first.",
-    success: "Thank you for helping improve GradPlan!"
+    draftOpened: "Your email draft has been opened. Please send it from your email app.",
+    emailAppFallback: (email) => `Your email app did not open. Please email us at: ${email}`,
+    copySuccess: "Feedback copied. You can paste it into your email app.",
+    copyError: "Copy failed. Please copy your message manually."
   },
   landing: {
     badge: "GradPlan Beta",
