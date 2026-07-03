@@ -1,4 +1,5 @@
 import "./globals.css";
+import { Analytics } from "@vercel/analytics/next";
 import { AppShell } from "@/components/AppShell";
 import { LanguageProvider } from "@/components/LanguageProvider";
 import { ProfileProvider } from "@/components/ProfileProvider";
@@ -17,6 +18,7 @@ export default function RootLayout({ children }) {
             <AppShell>{children}</AppShell>
           </ProfileProvider>
         </LanguageProvider>
+        <Analytics />
       </body>
     </html>
   );
