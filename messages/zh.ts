@@ -72,10 +72,7 @@ export const zh = {
     submit: "提交反馈",
     close: "关闭反馈弹窗",
     validation: "请先填写反馈内容。",
-    success: "Thank you for helping improve GradPlan!",
-    mailtoSubject: (type) => `GradPlan Feedback: ${type}`,
-    mailtoBody: ({ type, message, email, page }) =>
-      `反馈类型：${type}\n\n反馈内容：\n${message}\n\nEmail：${email || "未填写"}\n页面：${page}`
+    success: "Thank you for helping improve GradPlan!"
   },
   landing: {
     badge: "GradPlan Beta",

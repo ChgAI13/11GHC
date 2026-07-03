@@ -72,10 +72,7 @@ export const en = {
     submit: "Submit Feedback",
     close: "Close feedback dialog",
     validation: "Please tell us what happened first.",
-    success: "Thank you for helping improve GradPlan!",
-    mailtoSubject: (type) => `GradPlan Feedback: ${type}`,
-    mailtoBody: ({ type, message, email, page }) =>
-      `Feedback type: ${type}\n\nMessage:\n${message}\n\nEmail: ${email || "Not provided"}\nPage: ${page}`
+    success: "Thank you for helping improve GradPlan!"
   },
   landing: {
     badge: "GradPlan Beta",

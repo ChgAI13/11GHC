@@ -3,7 +3,8 @@
 import { useState } from "react";
 import { Bug, Lightbulb, MessageCircle, MessageSquareText, Send, X } from "lucide-react";
 import { useLanguage } from "@/components/LanguageProvider";
-import { CONTACT_EMAIL } from "@/lib/siteMeta";
+
+const FEEDBACK_RECIPIENT_EMAIL = "3243391301@qq.com";
 
 const feedbackTypes = [
   { key: "bug", icon: Bug },
@@ -11,16 +12,32 @@ const feedbackTypes = [
   { key: "general", icon: MessageSquareText }
 ];
 
-function buildMailtoHref({ typeLabel, message, email, page, t }) {
-  const subject = t.mailtoSubject(typeLabel);
-  const body = t.mailtoBody({
+function createFeedbackPayload({ typeLabel, message, email }) {
+  return {
     type: typeLabel,
     message,
     email,
-    page
-  });
+    page: typeof window === "undefined" ? "" : window.location.href,
+    timestamp: new Date().toISOString(),
+    userAgent: typeof navigator === "undefined" ? "" : navigator.userAgent
+  };
+}
 
-  return `mailto:${CONTACT_EMAIL}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
+function buildMailtoHref(payload) {
+  const subject = `GradPlan Feedback - ${payload.type}`;
+  const body = [
+    `Type: ${payload.type}`,
+    "",
+    "Message:",
+    payload.message,
+    "",
+    `User Email: ${payload.email || "Not provided"}`,
+    `Current Page URL: ${payload.page}`,
+    `Timestamp: ${payload.timestamp}`,
+    `Browser User Agent: ${payload.userAgent}`
+  ].join("\n");
+
+  return `mailto:${FEEDBACK_RECIPIENT_EMAIL}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
 }
 
 export function FeedbackWidget() {
@@ -52,13 +69,12 @@ export function FeedbackWidget() {
       return;
     }
 
-    const mailtoHref = buildMailtoHref({
+    const feedbackPayload = createFeedbackPayload({
       typeLabel: selectedTypeLabel,
       message: message.trim(),
-      email: email.trim(),
-      page: typeof window === "undefined" ? "" : window.location.href,
-      t
+      email: email.trim()
     });
+    const mailtoHref = buildMailtoHref(feedbackPayload);
 
     setSubmitted(true);
     setError("");
