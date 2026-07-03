@@ -14,6 +14,7 @@ import {
 } from "lucide-react";
 import { useLanguage } from "@/components/LanguageProvider";
 import { LanguageSwitcher } from "@/components/LanguageSwitcher";
+import { FeedbackWidget } from "@/components/FeedbackWidget";
 import { useProfile } from "@/components/ProfileProvider";
 import { SITE_VERSION } from "@/lib/siteMeta";
 
@@ -273,6 +274,7 @@ export function AppShell({ children }) {
               ))}
             </div>
           </nav>
+          <FeedbackWidget />
         </div>
       </div>
     </div>

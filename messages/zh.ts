@@ -55,6 +55,28 @@ export const zh = {
     },
     version: "版本"
   },
+  feedback: {
+    floatingButton: "💬 Feedback",
+    title: "反馈",
+    intro: "报告问题或分享想法，帮助 GradPlan 变得更好。",
+    typeLabel: "类型",
+    typeOptions: {
+      bug: "Bug Report",
+      feature: "Feature Request",
+      general: "General Feedback"
+    },
+    messageLabel: "反馈内容",
+    messagePlaceholder: "Tell us what happened...",
+    emailLabel: "Email（可选）",
+    emailPlaceholder: "you@example.com",
+    submit: "提交反馈",
+    close: "关闭反馈弹窗",
+    validation: "请先填写反馈内容。",
+    success: "Thank you for helping improve GradPlan!",
+    mailtoSubject: (type) => `GradPlan Feedback: ${type}`,
+    mailtoBody: ({ type, message, email, page }) =>
+      `反馈类型：${type}\n\n反馈内容：\n${message}\n\nEmail：${email || "未填写"}\n页面：${page}`
+  },
   landing: {
     badge: "GradPlan Beta",
     titleLine1: "规划你的学位。",
